@@ -1,0 +1,8 @@
+language: go
+go:
+  - 1.8
+  - tip
+  - master
+
+script:
+  - go test -v -tags "selinux linux" ./...

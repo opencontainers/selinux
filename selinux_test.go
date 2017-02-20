@@ -1,26 +1,24 @@
 // +build linux,selinux
 
-package selinux_test
+package selinux
 
 import (
 	"os"
 	"testing"
-
-	"github.com/opencontainers/runc/libcontainer/selinux"
 )
 
 func TestSetfilecon(t *testing.T) {
-	if selinux.SelinuxEnabled() {
+	if SelinuxEnabled() {
 		tmp := "selinux_test"
 		con := "system_u:object_r:bin_t:s0"
 		out, _ := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE, 0)
 		out.Close()
-		err := selinux.Setfilecon(tmp, con)
+		err := Setfilecon(tmp, con)
 		if err != nil {
 			t.Log("Setfilecon failed")
 			t.Fatal(err)
 		}
-		filecon, err := selinux.Getfilecon(tmp)
+		filecon, err := Getfilecon(tmp)
 		if err != nil {
 			t.Log("Getfilecon failed")
 			t.Fatal(err)
@@ -39,47 +37,45 @@ func TestSELinux(t *testing.T) {
 		plabel, flabel string
 	)
 
-	if selinux.SelinuxEnabled() {
+	if SelinuxEnabled() {
 		t.Log("Enabled")
-		plabel, flabel = selinux.GetLxcContexts()
+		plabel, flabel = GetLxcContexts()
 		t.Log(plabel)
 		t.Log(flabel)
-		selinux.FreeLxcContexts(plabel)
-		plabel, flabel = selinux.GetLxcContexts()
+		FreeLxcContexts(plabel)
+		plabel, flabel = GetLxcContexts()
 		t.Log(plabel)
 		t.Log(flabel)
-		selinux.FreeLxcContexts(plabel)
-		t.Log("getenforce ", selinux.SelinuxGetEnforce())
-		mode := selinux.SelinuxGetEnforceMode()
+		FreeLxcContexts(plabel)
+		t.Log("getenforce ", SelinuxGetEnforce())
+		mode := SelinuxGetEnforceMode()
 		t.Log("getenforcemode ", mode)
 
-		defer selinux.SelinuxSetEnforce(mode)
-		if err := selinux.SelinuxSetEnforce(selinux.Enforcing); err != nil {
+		defer SelinuxSetEnforce(mode)
+		if err := SelinuxSetEnforce(Enforcing); err != nil {
 			t.Fatalf("enforcing selinux failed: %v", err)
 		}
-		if err := selinux.SelinuxSetEnforce(selinux.Permissive); err != nil {
+		if err := SelinuxSetEnforce(Permissive); err != nil {
 			t.Fatalf("setting selinux mode to permissive failed: %v", err)
 		}
-		selinux.SelinuxSetEnforce(mode)
+		SelinuxSetEnforce(mode)
 
 		pid := os.Getpid()
-		t.Logf("PID:%d MCS:%s\n", pid, selinux.IntToMcs(pid, 1023))
-		err = selinux.Setfscreatecon("unconfined_u:unconfined_r:unconfined_t:s0")
+		t.Logf("PID:%d MCS:%s\n", pid, IntToMcs(pid, 1023))
+		err = Setfscreatecon("unconfined_u:unconfined_r:unconfined_t:s0")
 		if err == nil {
-			t.Log(selinux.Getfscreatecon())
+			t.Log(Getfscreatecon())
 		} else {
 			t.Log("setfscreatecon failed", err)
 			t.Fatal(err)
 		}
-		err = selinux.Setfscreatecon("")
+		err = Setfscreatecon("")
 		if err == nil {
-			t.Log(selinux.Getfscreatecon())
+			t.Log(Getfscreatecon())
 		} else {
 			t.Log("setfscreatecon failed", err)
 			t.Fatal(err)
 		}
-		t.Log(selinux.Getpidcon(1))
-	} else {
-		t.Log("Disabled")
+		t.Log(Getpidcon(1))
 	}
 }

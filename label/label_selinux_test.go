@@ -7,60 +7,55 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opencontainers/runc/libcontainer/selinux"
+	"github.com/opencontainers/go-selinux"
 )
 
 func TestInit(t *testing.T) {
-	if selinux.SelinuxEnabled() {
-		var testNull []string
-		plabel, mlabel, err := InitLabels(testNull)
-		if err != nil {
-			t.Log("InitLabels Failed")
-			t.Fatal(err)
-		}
-		testDisabled := []string{"disable"}
-		roMountLabel := GetROMountLabel()
-		if roMountLabel == "" {
-			t.Errorf("GetROMountLabel Failed")
-		}
-		plabel, mlabel, err = InitLabels(testDisabled)
-		if err != nil {
-			t.Log("InitLabels Disabled Failed")
-			t.Fatal(err)
-		}
-		if plabel != "" {
-			t.Log("InitLabels Disabled Failed")
-			t.FailNow()
-		}
-		testUser := []string{"user:user_u", "role:user_r", "type:user_t", "level:s0:c1,c15"}
-		plabel, mlabel, err = InitLabels(testUser)
-		if err != nil {
-			t.Log("InitLabels User Failed")
-			t.Fatal(err)
-		}
-		if plabel != "user_u:user_r:user_t:s0:c1,c15" || mlabel != "user_u:object_r:svirt_sandbox_file_t:s0:c1,c15" {
-			t.Log("InitLabels User Match Failed")
-			t.Log(plabel, mlabel)
-			t.Fatal(err)
-		}
+	if !selinux.SelinuxEnabled() {
+		return
+	}
+	var testNull []string
+	plabel, mlabel, err := InitLabels(testNull)
+	if err != nil {
+		t.Log("InitLabels Failed")
+		t.Fatal(err)
+	}
+	testDisabled := []string{"disable"}
+	roMountLabel := GetROMountLabel()
+	if roMountLabel == "" {
+		t.Errorf("GetROMountLabel Failed")
+	}
+	plabel, mlabel, err = InitLabels(testDisabled)
+	if err != nil {
+		t.Log("InitLabels Disabled Failed")
+		t.Fatal(err)
+	}
+	if plabel != "" {
+		t.Log("InitLabels Disabled Failed")
+		t.FailNow()
+	}
+	testUser := []string{"user:user_u", "role:user_r", "type:user_t", "level:s0:c1,c15"}
+	plabel, mlabel, err = InitLabels(testUser)
+	if err != nil {
+		t.Log("InitLabels User Failed")
+		t.Fatal(err)
+	}
+	if plabel != "user_u:user_r:user_t:s0:c1,c15" || mlabel != "user_u:object_r:svirt_sandbox_file_t:s0:c1,c15" {
+		t.Log("InitLabels User Match Failed")
+		t.Log(plabel, mlabel)
+		t.Fatal(err)
+	}
 
-		testBadData := []string{"user", "role:user_r", "type:user_t", "level:s0:c1,c15"}
-		if _, _, err = InitLabels(testBadData); err == nil {
-			t.Log("InitLabels Bad Failed")
-			t.Fatal(err)
-		}
+	testBadData := []string{"user", "role:user_r", "type:user_t", "level:s0:c1,c15"}
+	if _, _, err = InitLabels(testBadData); err == nil {
+		t.Log("InitLabels Bad Failed")
+		t.Fatal(err)
 	}
 }
 func TestDuplicateLabel(t *testing.T) {
 	secopt := DupSecOpt("system_u:system_r:svirt_lxc_net_t:s0:c1,c2")
-	t.Log(secopt)
 	for _, opt := range secopt {
-		parts := strings.SplitN(opt, "=", 2)
-		if len(parts) != 2 || parts[0] != "label" {
-			t.Errorf("Invalid DupSecOpt return value")
-			continue
-		}
-		con := strings.SplitN(parts[1], ":", 2)
+		con := strings.SplitN(opt, ":", 2)
 		if con[0] == "user" {
 			if con[1] != "system_u" {
 				t.Errorf("DupSecOpt Failed user incorrect")
@@ -88,11 +83,14 @@ func TestDuplicateLabel(t *testing.T) {
 		t.Errorf("DupSecOpt Failed invalid field %q", con[0])
 	}
 	secopt = DisableSecOpt()
-	if secopt[0] != "label=disable" {
-		t.Errorf("DisableSecOpt Failed level incorrect")
+	if secopt[0] != "disable" {
+		t.Errorf("DisableSecOpt Failed level incorrect %q", secopt[0])
 	}
 }
 func TestRelabel(t *testing.T) {
+	if !selinux.SelinuxEnabled() {
+		return
+	}
 	testdir := "/tmp/test"
 	if err := os.Mkdir(testdir, 0755); err != nil {
 		t.Fatal(err)
