@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opencontainers/go-selinux"
+	"github.com/opencontainers/selinux"
 )
 
 func TestInit(t *testing.T) {
