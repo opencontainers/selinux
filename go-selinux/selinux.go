@@ -15,8 +15,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-
-	"github.com/opencontainers/runc/libcontainer/system"
 )
 
 const (
@@ -208,12 +206,12 @@ func readCon(name string) (string, error) {
 
 // Setfilecon sets the SELinux label for this path or returns an error.
 func Setfilecon(path string, scon string) error {
-	return system.Lsetxattr(path, xattrNameSelinux, []byte(scon), 0)
+	return lsetxattr(path, xattrNameSelinux, []byte(scon), 0)
 }
 
 // Getfilecon returns the SELinux label for this path or returns an error.
 func Getfilecon(path string) (string, error) {
-	con, err := system.Lgetxattr(path, xattrNameSelinux)
+	con, err := lgetxattr(path, xattrNameSelinux)
 	if err != nil {
 		return "", err
 	}
