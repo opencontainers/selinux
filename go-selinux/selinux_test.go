@@ -7,24 +7,24 @@ import (
 	"testing"
 )
 
-func TestSetfilecon(t *testing.T) {
-	if SelinuxEnabled() {
+func TestSetFileLabel(t *testing.T) {
+	if GetEnabled() {
 		tmp := "selinux_test"
 		con := "system_u:object_r:bin_t:s0"
 		out, _ := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE, 0)
 		out.Close()
-		err := Setfilecon(tmp, con)
+		err := SetFileLabel(tmp, con)
 		if err != nil {
 			t.Log("Setfilecon failed")
 			t.Fatal(err)
 		}
-		filecon, err := Getfilecon(tmp)
+		filelabel, err := FileLabel(tmp)
 		if err != nil {
-			t.Log("Getfilecon failed")
+			t.Log("FileLabel failed")
 			t.Fatal(err)
 		}
-		if con != filecon {
-			t.Fatal("Getfilecon failed, returned %s expected %s", filecon, con)
+		if con != filelabel {
+			t.Fatal("FileLabel failed, returned %s expected %s", filelabel, con)
 		}
 
 		os.Remove(tmp)
@@ -37,45 +37,45 @@ func TestSELinux(t *testing.T) {
 		plabel, flabel string
 	)
 
-	if SelinuxEnabled() {
+	if GetEnabled() {
 		t.Log("Enabled")
-		plabel, flabel = GetLxcContexts()
+		plabel, flabel = ContainerLabels()
 		t.Log(plabel)
 		t.Log(flabel)
-		FreeLxcContexts(plabel)
-		plabel, flabel = GetLxcContexts()
+		ReleaseLabel(plabel)
+		plabel, flabel = ContainerLabels()
 		t.Log(plabel)
 		t.Log(flabel)
-		FreeLxcContexts(plabel)
-		t.Log("getenforce ", SelinuxGetEnforce())
-		mode := SelinuxGetEnforceMode()
-		t.Log("getenforcemode ", mode)
+		ReleaseLabel(plabel)
+		t.Log("Enforcing Mode", EnforceMode())
+		mode := DefaultEnforceMode()
+		t.Log("Default Enforce Mode ", mode)
 
-		defer SelinuxSetEnforce(mode)
-		if err := SelinuxSetEnforce(Enforcing); err != nil {
+		defer SetEnforceMode(mode)
+		if err := SetEnforceMode(Enforcing); err != nil {
 			t.Fatalf("enforcing selinux failed: %v", err)
 		}
-		if err := SelinuxSetEnforce(Permissive); err != nil {
+		if err := SetEnforceMode(Permissive); err != nil {
 			t.Fatalf("setting selinux mode to permissive failed: %v", err)
 		}
-		SelinuxSetEnforce(mode)
+		SetEnforceMode(mode)
 
 		pid := os.Getpid()
-		t.Logf("PID:%d MCS:%s\n", pid, IntToMcs(pid, 1023))
-		err = Setfscreatecon("unconfined_u:unconfined_r:unconfined_t:s0")
+		t.Logf("PID:%d MCS:%s\n", pid, intToMcs(pid, 1023))
+		err = SetFSCreateLabel("unconfined_u:unconfined_r:unconfined_t:s0")
 		if err == nil {
-			t.Log(Getfscreatecon())
+			t.Log(FSCreateLabel())
 		} else {
-			t.Log("setfscreatecon failed", err)
+			t.Log("SetFSCreateLabel failed", err)
 			t.Fatal(err)
 		}
-		err = Setfscreatecon("")
+		err = SetFSCreateLabel("")
 		if err == nil {
-			t.Log(Getfscreatecon())
+			t.Log(FSCreateLabel())
 		} else {
-			t.Log("setfscreatecon failed", err)
+			t.Log("SetFSCreateLabel failed", err)
 			t.Fatal(err)
 		}
-		t.Log(Getpidcon(1))
+		t.Log(PidLabel(1))
 	}
 }
