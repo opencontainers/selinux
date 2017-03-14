@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opencontainers/selinux"
+	"github.com/opencontainers/selinux/go-selinux"
 )
 
 // Valid Label Options

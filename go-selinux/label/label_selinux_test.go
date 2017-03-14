@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opencontainers/selinux"
+	"github.com/opencontainers/selinux/go-selinux"
 )
 
 func TestInit(t *testing.T) {
@@ -40,7 +40,7 @@ func TestInit(t *testing.T) {
 		t.Log("InitLabels User Failed")
 		t.Fatal(err)
 	}
-	if plabel != "user_u:user_r:user_t:s0:c1,c15" || mlabel != "user_u:object_r:svirt_sandbox_file_t:s0:c1,c15" {
+	if plabel != "user_u:user_r:user_t:s0:c1,c15" || (mlabel != "user_u:object_r:container_file_t:s0:c1,c15" && mlabel != "user_u:object_r:svirt_sandbox_file_t:s0:c1,c15") {
 		t.Log("InitLabels User Match Failed")
 		t.Log(plabel, mlabel)
 		t.Fatal(err)
@@ -53,7 +53,7 @@ func TestInit(t *testing.T) {
 	}
 }
 func TestDuplicateLabel(t *testing.T) {
-	secopt := DupSecOpt("system_u:system_r:svirt_lxc_net_t:s0:c1,c2")
+	secopt := DupSecOpt("system_u:system_r:container_t:s0:c1,c2")
 	for _, opt := range secopt {
 		con := strings.SplitN(opt, ":", 2)
 		if con[0] == "user" {
@@ -69,7 +69,7 @@ func TestDuplicateLabel(t *testing.T) {
 			continue
 		}
 		if con[0] == "type" {
-			if con[1] != "svirt_lxc_net_t" {
+			if con[1] != "container_t" {
 				t.Errorf("DupSecOpt Failed type incorrect")
 			}
 			continue
@@ -96,7 +96,7 @@ func TestRelabel(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(testdir)
-	label := "system_u:object_r:svirt_sandbox_file_t:s0:c1,c2"
+	label := "system_u:object_r:container_file_t:s0:c1,c2"
 	if err := Relabel(testdir, "", true); err != nil {
 		t.Fatalf("Relabel with no label failed: %v", err)
 	}
