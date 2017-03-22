@@ -4,5 +4,14 @@ go:
   - tip
   - master
 
+env:
+  global:
+    - BUILDTAGS="selinux linux"
+
+before_install:
+  - go get -u github.com/golang/lint/golint
+  - go get -u github.com/vbatts/git-validation
+
 script:
-  - go test -v -tags "selinux linux" ./...
+  - git-validation -run DCO,short-subject -v -range ${TRAVIS_COMMIT_RANGE}
+  - make BUILDTAGS="${BUILDTAGS}" lint test

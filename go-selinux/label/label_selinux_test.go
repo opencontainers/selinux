@@ -11,7 +11,7 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	if !selinux.SelinuxEnabled() {
+	if !selinux.GetEnabled() {
 		return
 	}
 	var testNull []string
@@ -21,9 +21,9 @@ func TestInit(t *testing.T) {
 		t.Fatal(err)
 	}
 	testDisabled := []string{"disable"}
-	roMountLabel := GetROMountLabel()
+	roMountLabel := ROMountLabel()
 	if roMountLabel == "" {
-		t.Errorf("GetROMountLabel Failed")
+		t.Errorf("ROMountLabel Failed")
 	}
 	plabel, mlabel, err = InitLabels(testDisabled)
 	if err != nil {
@@ -88,7 +88,7 @@ func TestDuplicateLabel(t *testing.T) {
 	}
 }
 func TestRelabel(t *testing.T) {
-	if !selinux.SelinuxEnabled() {
+	if !selinux.GetEnabled() {
 		return
 	}
 	testdir := "/tmp/test"
