@@ -11,4 +11,8 @@ test: check-gopath
 
 .PHONY:
 lint:
-	golint go-selinux
+	@out="$$(golint go-selinux)"; \
+	if [ -n "$$out" ]; then \
+		echo "$$out"; \
+		exit 1; \
+	fi
