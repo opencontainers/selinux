@@ -9,6 +9,11 @@ import (
 	"github.com/opencontainers/selinux/go-selinux"
 )
 
+// Init initialises the labeling system
+func Init() {
+	selinux.InitState()
+}
+
 // Valid Label Options
 var validOptions = map[string]bool{
 	"disable": true,
@@ -24,9 +29,9 @@ var ErrIncompatibleLabel = fmt.Errorf("Bad SELinux option z and Z can not be use
 // the container.  A list of options can be passed into this function to alter
 // the labels.  The labels returned will include a random MCS String, that is
 // guaranteed to be unique.
-func InitLabels(options []string) (string, string, error) {
-	if !selinux.GetEnabled() {
-		return "", "", nil
+func InitLabels(options []string) (plabel selinux.Label, mlabel selinux.Label, err error) {
+	if !selinux.Enabled() {
+		return plabel, mlabel, nil
 	}
 	processLabel, mountLabel := selinux.ContainerLabels()
 	if processLabel != "" {
@@ -34,25 +39,33 @@ func InitLabels(options []string) (string, string, error) {
 		mcon := selinux.NewContext(mountLabel)
 		for _, opt := range options {
 			if opt == "disable" {
-				return "", "", nil
+				return plabel, mlabel, nil
 			}
 			if i := strings.Index(opt, ":"); i == -1 {
-				return "", "", fmt.Errorf("Bad label option %q, valid options 'disable' or \n'user, role, level, type' followed by ':' and a value", opt)
+				return plabel, mlabel, fmt.Errorf("Bad label option %q, valid options 'disable' or \n'user, role, level, type' followed by ':' and a value", opt)
 			}
 			con := strings.SplitN(opt, ":", 2)
 			if !validOptions[con[0]] {
-				return "", "", fmt.Errorf("Bad label option %q, valid options 'disable, user, role, level, type'", con[0])
+				return plabel, mlabel, fmt.Errorf("Bad label option %q, valid options 'disable, user, role, level, type'", con[0])
 
 			}
-			pcon[con[0]] = con[1]
-			if con[0] == "level" || con[0] == "user" {
-				mcon[con[0]] = con[1]
+			switch con[0] {
+			case "user":
+				pcon.User = con[1]
+				mcon.User = con[1]
+			case "level":
+				pcon.Level = con[1]
+				mcon.Level = con[1]
+			case "type":
+				pcon.Type = con[1]
+			case "role":
+				pcon.Role = con[1]
 			}
 		}
-		processLabel = pcon.Get()
-		mountLabel = mcon.Get()
+		plabel = pcon
+		mlabel = mcon
 	}
-	return processLabel, mountLabel, nil
+	return plabel, mlabel, nil
 }
 
 func ROMountLabel() string {
@@ -60,7 +73,7 @@ func ROMountLabel() string {
 }
 
 // DEPRECATED: The GenLabels function is only to be used during the transition to the official API.
-func GenLabels(options string) (string, string, error) {
+func GenLabels(options string) (selinux.Label, selinux.Label, error) {
 	return InitLabels(strings.Fields(options))
 }
 
@@ -105,7 +118,7 @@ func FileLabel(path string) (string, error) {
 
 // SetFileLabel modifies the "path" label to the specified file label
 func SetFileLabel(path string, fileLabel string) error {
-	if selinux.GetEnabled() && fileLabel != "" {
+	if selinux.Enabled() && fileLabel != "" {
 		return selinux.SetFileLabel(path, fileLabel)
 	}
 	return nil
@@ -113,7 +126,7 @@ func SetFileLabel(path string, fileLabel string) error {
 
 // SetFileCreateLabel tells the kernel the label for all files to be created
 func SetFileCreateLabel(fileLabel string) error {
-	if selinux.GetEnabled() {
+	if selinux.Enabled() {
 		return selinux.SetFSCreateLabel(fileLabel)
 	}
 	return nil
@@ -123,7 +136,7 @@ func SetFileCreateLabel(fileLabel string) error {
 // It changes the MCS label to s0 if shared is true.
 // This will allow all containers to share the content.
 func Relabel(path string, fileLabel string, shared bool) error {
-	if !selinux.GetEnabled() {
+	if !selinux.Enabled() {
 		return nil
 	}
 
@@ -138,7 +151,7 @@ func Relabel(path string, fileLabel string, shared bool) error {
 
 	if shared {
 		c := selinux.NewContext(fileLabel)
-		c["level"] = "s0"
+		c.Level = "s0"
 		fileLabel = c.Get()
 	}
 	if err := selinux.Chcon(path, fileLabel, true); err != nil {
@@ -150,11 +163,6 @@ func Relabel(path string, fileLabel string, shared bool) error {
 // PidLabel will return the label of the process running with the specified pid
 func PidLabel(pid int) (string, error) {
 	return selinux.PidLabel(pid)
-}
-
-// Init initialises the labeling system
-func Init() {
-	selinux.GetEnabled()
 }
 
 // ReserveLabel will record the fact that the MCS label has already been used.

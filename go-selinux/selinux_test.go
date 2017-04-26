@@ -50,8 +50,8 @@ func TestSELinux(t *testing.T) {
 		t.Log("Enforcing Mode", EnforceMode())
 		mode := DefaultEnforceMode()
 		t.Log("Default Enforce Mode ", mode)
-
 		defer SetEnforceMode(mode)
+
 		if err := SetEnforceMode(Enforcing); err != nil {
 			t.Fatalf("enforcing selinux failed: %v", err)
 		}
