@@ -36,6 +36,7 @@ type selinuxState struct {
 	enabledSet   bool
 	enabled      bool
 	selinuxfsSet bool
+	enabledHost  bool
 	selinuxfs    string
 	mcsList      map[string]bool
 	sync.Mutex
@@ -51,12 +52,11 @@ var (
 // Context is a representation of the SELinux label broken into 4 parts
 type Context map[string]string
 
-func (s *selinuxState) setEnable(enabled bool) bool {
+func (s *selinuxState) setEnable(enabled bool) {
 	s.Lock()
 	defer s.Unlock()
 	s.enabledSet = true
 	s.enabled = enabled
-	return s.enabled
 }
 
 func (s *selinuxState) getEnabled() bool {
@@ -68,13 +68,24 @@ func (s *selinuxState) getEnabled() bool {
 		return enabled
 	}
 
-	enabled = false
-	if fs := getSelinuxMountPoint(); fs != "" {
-		if con, _ := CurrentLabel(); con != "kernel" {
-			enabled = true
-		}
-	}
-	return s.setEnable(enabled)
+	// getSELinuxfs will determine if SELinux is enabled on host
+	_ = s.getSELinuxfs()
+	s.Lock()
+	defer s.Unlock()
+	s.enabled = s.enabledHost
+	s.enabledSet = true
+	return s.enabled
+}
+
+func (s *selinuxState) getEnabledHost() bool {
+	s.Lock()
+	defer s.Unlock()
+	return s.enabledHost
+}
+
+// SetEnabled disables selinux support for the package
+func SetEnabled() {
+	state.setEnable(true)
 }
 
 // SetDisabled disables selinux support for the package
@@ -82,30 +93,22 @@ func SetDisabled() {
 	state.setEnable(false)
 }
 
-func (s *selinuxState) setSELinuxfs(selinuxfs string) string {
-	s.Lock()
-	defer s.Unlock()
-	s.selinuxfsSet = true
-	s.selinuxfs = selinuxfs
-	return s.selinuxfs
-}
-
 func (s *selinuxState) getSELinuxfs() string {
 	s.Lock()
-	selinuxfs := s.selinuxfs
-	selinuxfsSet := s.selinuxfsSet
-	s.Unlock()
-	if selinuxfsSet {
-		return selinuxfs
+	defer s.Unlock()
+	if s.selinuxfsSet {
+		return s.selinuxfs
 	}
 
-	selinuxfs = ""
+	// This code path should only be run once.  Since SELinux state will only change on reboot
+	s.selinuxfsSet = true
 	f, err := os.Open("/proc/self/mountinfo")
 	if err != nil {
-		return selinuxfs
+		return s.selinuxfs
 	}
 	defer f.Close()
 
+	selinuxfs := ""
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		txt := scanner.Text()
@@ -132,7 +135,15 @@ func (s *selinuxState) getSELinuxfs() string {
 			selinuxfs = ""
 		}
 	}
-	return s.setSELinuxfs(selinuxfs)
+
+	if fs := selinuxfs; fs != "" {
+		if con, _ := CurrentLabel(); con != "kernel" {
+			s.enabled = true
+			s.enabledHost = true
+		}
+	}
+	s.selinuxfs = selinuxfs
+	return selinuxfs
 }
 
 // getSelinuxMountPoint returns the path to the mountpoint of an selinuxfs
