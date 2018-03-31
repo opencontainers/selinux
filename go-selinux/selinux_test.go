@@ -13,6 +13,7 @@ func TestSetFileLabel(t *testing.T) {
 		con := "system_u:object_r:bin_t:s0"
 		out, _ := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE, 0)
 		out.Close()
+		defer os.Remove(tmp)
 		err := SetFileLabel(tmp, con)
 		if err != nil {
 			t.Log("Setfilecon failed")
@@ -26,8 +27,6 @@ func TestSetFileLabel(t *testing.T) {
 		if con != filelabel {
 			t.Fatalf("FileLabel failed, returned %s expected %s", filelabel, con)
 		}
-
-		os.Remove(tmp)
 	}
 }
 
