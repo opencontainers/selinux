@@ -106,7 +106,7 @@ func verifySELinuxfsMount(mnt string) bool {
 		}
 		return false
 	}
-	if buf.Type != selinuxfsMagic {
+	if uint32(buf.Type) != uint32(selinuxfsMagic) {
 		return false
 	}
 	if (buf.Flags & stRdOnly) != 0 {
