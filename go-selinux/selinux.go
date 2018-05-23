@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -25,7 +26,8 @@ const (
 	// Permissive constant to indicate SELinux is in permissive mode
 	Permissive = 0
 	// Disabled constant to indicate SELinux is disabled
-	Disabled         = -1
+	Disabled = -1
+
 	selinuxDir       = "/etc/selinux/"
 	selinuxConfig    = selinuxDir + "config"
 	selinuxfsMount   = "/sys/fs/selinux"
@@ -46,7 +48,13 @@ type selinuxState struct {
 }
 
 var (
+	// ErrMCSAlreadyExists is returned when trying to allocate a duplicate MCS.
+	ErrMCSAlreadyExists = errors.New("MCS label already exists")
+	// ErrEmptyPath is returned when an empty path has been specified.
+	ErrEmptyPath = errors.New("empty path")
+
 	assignRegex = regexp.MustCompile(`^([^=]+)=(.*)$`)
+	roFileLabel string
 	state       = selinuxState{
 		mcsList: make(map[string]bool),
 	}
@@ -197,7 +205,7 @@ func GetEnabled() bool {
 	return state.getEnabled()
 }
 
-func readConfig(target string) (value string) {
+func readConfig(target string) string {
 	var (
 		val, key string
 		bufin    *bufio.Reader
@@ -239,30 +247,42 @@ func readConfig(target string) (value string) {
 }
 
 func getSELinuxPolicyRoot() string {
-	return selinuxDir + readConfig(selinuxTypeTag)
+	return filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
 }
 
-func readCon(name string) (string, error) {
-	var val string
+func readCon(fpath string) (string, error) {
+	if fpath == "" {
+		return "", ErrEmptyPath
+	}
 
-	in, err := os.Open(name)
+	in, err := os.Open(fpath)
 	if err != nil {
 		return "", err
 	}
 	defer in.Close()
 
-	_, err = fmt.Fscanf(in, "%s", &val)
-	return strings.Trim(val, "\x00"), err
+	var retval string
+	if _, err := fmt.Fscanf(in, "%s", &retval); err != nil {
+		return "", err
+	}
+	return strings.Trim(retval, "\x00"), nil
 }
 
 // SetFileLabel sets the SELinux label for this path or returns an error.
-func SetFileLabel(path string, label string) error {
-	return lsetxattr(path, xattrNameSelinux, []byte(label), 0)
+func SetFileLabel(fpath string, label string) error {
+	if fpath == "" {
+		return ErrEmptyPath
+	}
+	return lsetxattr(fpath, xattrNameSelinux, []byte(label), 0)
 }
 
 // FileLabel returns the SELinux label for this path or returns an error.
-func FileLabel(path string) (string, error) {
-	label, err := lgetxattr(path, xattrNameSelinux)
+func FileLabel(fpath string) (string, error) {
+	if fpath == "" {
+		return "", ErrEmptyPath
+	}
+
+	label, err := lgetxattr(fpath, xattrNameSelinux)
 	if err != nil {
 		return "", err
 	}
@@ -307,8 +327,12 @@ func ExecLabel() (string, error) {
 	return readCon(fmt.Sprintf("/proc/self/task/%d/attr/exec", syscall.Gettid()))
 }
 
-func writeCon(name string, val string) error {
-	out, err := os.OpenFile(name, os.O_WRONLY, 0)
+func writeCon(fpath string, val string) error {
+	if fpath == "" {
+		return ErrEmptyPath
+	}
+
+	out, err := os.OpenFile(fpath, os.O_WRONLY, 0)
 	if err != nil {
 		return err
 	}
@@ -331,9 +355,11 @@ func CanonicalizeContext(val string) (string, error) {
 	return readWriteCon(filepath.Join(getSelinuxMountPoint(), "context"), val)
 }
 
-func readWriteCon(name string, val string) (string, error) {
-	var retval string
-	f, err := os.OpenFile(name, os.O_RDWR, 0)
+func readWriteCon(fpath string, val string) (string, error) {
+	if fpath == "" {
+		return "", ErrEmptyPath
+	}
+	f, err := os.OpenFile(fpath, os.O_RDWR, 0)
 	if err != nil {
 		return "", err
 	}
@@ -344,8 +370,11 @@ func readWriteCon(name string, val string) (string, error) {
 		return "", err
 	}
 
-	_, err = fmt.Fscanf(f, "%s", &retval)
-	return strings.Trim(retval, "\x00"), err
+	var retval string
+	if _, err := fmt.Fscanf(f, "%s", &retval); err != nil {
+		return "", err
+	}
+	return strings.Trim(retval, "\x00"), nil
 }
 
 /*
@@ -440,7 +469,7 @@ func mcsAdd(mcs string) error {
 	state.Lock()
 	defer state.Unlock()
 	if state.mcsList[mcs] {
-		return fmt.Errorf("MCS Label already exists")
+		return ErrMCSAlreadyExists
 	}
 	state.mcsList[mcs] = true
 	return nil
@@ -516,10 +545,8 @@ func ReleaseLabel(label string) {
 	}
 }
 
-var roFileLabel string
-
 // ROFileLabel returns the specified SELinux readonly file label
-func ROFileLabel() (fileLabel string) {
+func ROFileLabel() string {
 	return roFileLabel
 }
 
@@ -603,7 +630,7 @@ func SecurityCheckContext(val string) error {
 }
 
 /*
-CopyLevel returns a label with the MLS/MCS level from src label replaces on
+CopyLevel returns a label with the MLS/MCS level from src label replaced on
 the dest label.
 */
 func CopyLevel(src, dest string) (string, error) {
@@ -626,20 +653,26 @@ func CopyLevel(src, dest string) (string, error) {
 
 // Prevent users from relabing system files
 func badPrefix(fpath string) error {
-	var badprefixes = []string{"/usr"}
+	if fpath == "" {
+		return ErrEmptyPath
+	}
 
-	for _, prefix := range badprefixes {
-		if fpath == prefix || strings.HasPrefix(fpath, fmt.Sprintf("%s/", prefix)) {
+	badPrefixes := []string{"/usr"}
+	for _, prefix := range badPrefixes {
+		if strings.HasPrefix(fpath, prefix) {
 			return fmt.Errorf("relabeling content in %s is not allowed", prefix)
 		}
 	}
 	return nil
 }
 
-// Chcon changes the fpath file object to the SELinux label label.
-// If the fpath is a directory and recurse is true Chcon will walk the
-// directory tree setting the label
+// Chcon changes the `fpath` file object to the SELinux label `label`.
+// If `fpath` is a directory and `recurse`` is true, Chcon will walk the
+// directory tree setting the label.
 func Chcon(fpath string, label string, recurse bool) error {
+	if fpath == "" {
+		return ErrEmptyPath
+	}
 	if label == "" {
 		return nil
 	}
@@ -658,7 +691,7 @@ func Chcon(fpath string, label string, recurse bool) error {
 }
 
 // DupSecOpt takes an SELinux process label and returns security options that
-// can will set the SELinux Type and Level for future container processes
+// can be used to set the SELinux Type and Level for future container processes.
 func DupSecOpt(src string) []string {
 	if src == "" {
 		return nil
@@ -681,8 +714,8 @@ func DupSecOpt(src string) []string {
 	return dup
 }
 
-// DisableSecOpt returns a security opt that can be used to disabling SELinux
-// labeling support for future container processes
+// DisableSecOpt returns a security opt that can be used to disable SELinux
+// labeling support for future container processes.
 func DisableSecOpt() []string {
 	return []string{"disable"}
 }
