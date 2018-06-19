@@ -11,22 +11,24 @@ import (
 
 func TestSetFileLabel(t *testing.T) {
 	if !GetEnabled() {
-		t.Skip()
+		t.Skip("SELinux not enabled, skipping.")
 	}
+
 	tmp := "selinux_test"
 	con := "system_u:object_r:bin_t:s0"
-	out, _ := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE, 0)
+	out, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE, 0)
+	if err != nil {
+		t.Fatalf("unable to open %s: %s", tmp, err)
+	}
 	out.Close()
 	defer os.Remove(tmp)
-	err := SetFileLabel(tmp, con)
-	if err != nil {
-		t.Log("Setfilecon failed")
-		t.Fatal(err)
+
+	if err := SetFileLabel(tmp, con); err != nil {
+		t.Fatalf("SetFileLabel failed: %s", err)
 	}
 	filelabel, err := FileLabel(tmp)
 	if err != nil {
-		t.Log("FileLabel failed")
-		t.Fatal(err)
+		t.Fatalf("FileLabel failed: %s", err)
 	}
 	if con != filelabel {
 		t.Fatalf("FileLabel failed, returned %s expected %s", filelabel, con)
@@ -35,7 +37,7 @@ func TestSetFileLabel(t *testing.T) {
 
 func TestSELinux(t *testing.T) {
 	if !GetEnabled() {
-		t.Skip()
+		t.Skip("SELinux not enabled, skipping.")
 	}
 
 	var (
@@ -43,7 +45,6 @@ func TestSELinux(t *testing.T) {
 		plabel, flabel string
 	)
 
-	t.Log("Enabled")
 	plabel, flabel = ContainerLabels()
 	t.Log(plabel)
 	t.Log(flabel)
@@ -86,7 +87,7 @@ func TestSELinux(t *testing.T) {
 
 func TestCanonicalizeContext(t *testing.T) {
 	if !GetEnabled() {
-		t.Skip()
+		t.Skip("SELinux not enabled, skipping.")
 	}
 
 	con := "system_u:object_r:bin_t:s0:c1,c2,c3"
