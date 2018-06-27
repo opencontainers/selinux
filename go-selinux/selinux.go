@@ -30,6 +30,11 @@ func SetDisabled() {
 	return
 }
 
+// GetEnabled returns whether selinux is currently enabled.
+func GetEnabled() bool {
+	return false
+}
+
 // SetFileLabel sets the SELinux label for this path or returns an error.
 func SetFileLabel(fpath string, label string) error {
 	return nil
