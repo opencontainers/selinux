@@ -161,6 +161,11 @@ func Init() {
 	selinux.GetEnabled()
 }
 
+// ClearLabels will clear all reserved labels
+func ClearLabels() {
+	selinux.ClearLabels()
+}
+
 // ReserveLabel will record the fact that the MCS label has already been used.
 // This will prevent InitLabels from using the MCS label in a newly created
 // container
