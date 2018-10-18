@@ -57,6 +57,16 @@ func TestSELinux(t *testing.T) {
 	mode := DefaultEnforceMode()
 	t.Log("Default Enforce Mode ", mode)
 
+	plabel, flabel = ContainerLabels()
+	t.Log(plabel)
+	t.Log(flabel)
+	ClearLabels()
+	t.Log("ClearLabels")
+	plabel, flabel = ContainerLabels()
+	t.Log(plabel)
+	t.Log(flabel)
+	ReleaseLabel(plabel)
+
 	defer SetEnforceMode(mode)
 	if err := SetEnforceMode(Enforcing); err != nil {
 		t.Fatalf("enforcing selinux failed: %v", err)
