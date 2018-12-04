@@ -25,6 +25,14 @@ func SetProcessLabel(processLabel string) error {
 	return nil
 }
 
+func SetSocketLabel(processLabel string) error {
+	return nil
+}
+
+func SocketLabel() (string, error) {
+	return "", nil
+}
+
 func GetFileLabel(path string) (string, error) {
 	return "", nil
 }
