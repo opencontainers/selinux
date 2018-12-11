@@ -113,7 +113,7 @@ func ProcessLabel() (string, error) {
 	return selinux.ExecLabel()
 }
 
-// GetFileLabel returns the label for specified path
+// FileLabel returns the label for specified path
 func FileLabel(path string) (string, error) {
 	return selinux.FileLabel(path)
 }
