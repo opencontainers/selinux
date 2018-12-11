@@ -159,3 +159,20 @@ func TestSELinuxNoLevel(t *testing.T) {
 		t.Errorf("NewContaxt and con.Get() Failed on non mls label")
 	}
 }
+
+func TestSocketLabel(t *testing.T) {
+	if !selinux.GetEnabled() {
+		return
+	}
+	label := "system_u:object_r:container_t:s0:c1,c2"
+	if err := selinux.SetSocketLabel(label); err != nil {
+		t.Fatal(err)
+	}
+	nlabel, err := selinux.SocketLabel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if label != nlabel {
+		t.Errorf("SocketLabel %s != %s", nlabel, label)
+	}
+}
