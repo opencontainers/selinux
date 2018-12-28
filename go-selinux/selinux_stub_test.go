@@ -59,7 +59,10 @@ func TestSELinux(t *testing.T) {
 	if _, err := SocketLabel(); err != nil {
 		t.Fatal(err)
 	}
-	con := NewContext("foobar")
+	con, err := NewContext("foobar")
+	if err != nil {
+		t.Fatal(err)
+	}
 	con.Get()
 	if err := SetEnforceMode(1); err != nil {
 		t.Fatal(err)

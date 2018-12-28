@@ -3,6 +3,7 @@
 package label
 
 import (
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -53,7 +54,10 @@ func TestInit(t *testing.T) {
 	}
 }
 func TestDuplicateLabel(t *testing.T) {
-	secopt := DupSecOpt("system_u:system_r:container_t:s0:c1,c2")
+	secopt, err := DupSecOpt("system_u:system_r:container_t:s0:c1,c2")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, opt := range secopt {
 		con := strings.SplitN(opt, ":", 2)
 		if con[0] == "user" {
@@ -91,8 +95,8 @@ func TestRelabel(t *testing.T) {
 	if !selinux.GetEnabled() {
 		return
 	}
-	testdir := "/tmp/test"
-	if err := os.Mkdir(testdir, 0755); err != nil {
+	testdir, err := ioutil.TempDir("/tmp", "")
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(testdir)
@@ -150,11 +154,18 @@ func TestSELinuxNoLevel(t *testing.T) {
 		return
 	}
 	tlabel := "system_u:system_r:container_t"
-	dup := DupSecOpt(tlabel)
+	dup, err := DupSecOpt(tlabel)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if len(dup) != 3 {
 		t.Errorf("DupSecOpt Failed on non mls label")
 	}
-	con := selinux.NewContext(tlabel)
+	con, err := selinux.NewContext(tlabel)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if con.Get() != tlabel {
 		t.Errorf("NewContaxt and con.Get() Failed on non mls label")
 	}
