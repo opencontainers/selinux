@@ -3,6 +3,7 @@
 package label
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -37,8 +38,8 @@ func TestInit(t *testing.T) {
 }
 
 func TestRelabel(t *testing.T) {
-	testdir := "/tmp/test"
-	if err := os.Mkdir(testdir, 0755); err != nil {
+	testdir, err := ioutil.TempDir("/tmp", "")
+	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(testdir)

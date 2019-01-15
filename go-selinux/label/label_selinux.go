@@ -35,8 +35,15 @@ func InitLabels(options []string) (plabel string, mlabel string, Err error) {
 				ReleaseLabel(mountLabel)
 			}
 		}()
-		pcon := selinux.NewContext(processLabel)
-		mcon := selinux.NewContext(mountLabel)
+		pcon, err := selinux.NewContext(processLabel)
+		if err != nil {
+			return "", "", err
+		}
+
+		mcon, err := selinux.NewContext(mountLabel)
+		if err != nil {
+			return "", "", err
+		}
 		for _, opt := range options {
 			if opt == "disable" {
 				return "", mountLabel, nil
@@ -152,7 +159,11 @@ func Relabel(path string, fileLabel string, shared bool) error {
 	}
 
 	if shared {
-		c := selinux.NewContext(fileLabel)
+		c, err := selinux.NewContext(fileLabel)
+		if err != nil {
+			return err
+		}
+
 		c["level"] = "s0"
 		fileLabel = c.Get()
 	}
@@ -195,7 +206,7 @@ func ReleaseLabel(label string) error {
 
 // DupSecOpt takes a process label and returns security options that
 // can be used to set duplicate labels on future container processes
-func DupSecOpt(src string) []string {
+func DupSecOpt(src string) ([]string, error) {
 	return selinux.DupSecOpt(src)
 }
 
