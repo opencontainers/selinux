@@ -4,6 +4,8 @@ package label
 
 import (
 	"fmt"
+	"os"
+	"os/user"
 	"strings"
 
 	"github.com/opencontainers/selinux/go-selinux"
@@ -153,7 +155,46 @@ func Relabel(path string, fileLabel string, shared bool) error {
 		return nil
 	}
 
-	exclude_paths := map[string]bool{"/": true, "/usr": true, "/etc": true, "/tmp": true, "/home": true, "/run": true, "/var": true, "/root": true}
+	exclude_paths := map[string]bool{
+		"/":           true,
+		"/bin":        true,
+		"/boot":       true,
+		"/dev":        true,
+		"/etc":        true,
+		"/etc/passwd": true,
+		"/etc/pki":    true,
+		"/etc/shadow": true,
+		"/home":       true,
+		"/lib":        true,
+		"/lib64":      true,
+		"/media":      true,
+		"/opt":        true,
+		"/proc":       true,
+		"/root":       true,
+		"/run":        true,
+		"/sbin":       true,
+		"/srv":        true,
+		"/sys":        true,
+		"/tmp":        true,
+		"/usr":        true,
+		"/var":        true,
+		"/var/lib":    true,
+		"/var/log":    true,
+	}
+
+	if home := os.Getenv("HOME"); home != "" {
+		exclude_paths[home] = true
+	}
+
+	if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
+		if usr, err := user.Lookup(sudoUser); err == nil {
+			exclude_paths[usr.HomeDir] = true
+		}
+	}
+
+	if path != "/" {
+		path = strings.TrimSuffix(path, "/")
+	}
 	if exclude_paths[path] {
 		return fmt.Errorf("SELinux relabeling of %s is not allowed", path)
 	}

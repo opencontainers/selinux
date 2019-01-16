@@ -119,8 +119,18 @@ func TestRelabel(t *testing.T) {
 	if err := Relabel("/usr", label, false); err == nil {
 		t.Fatalf("Relabel /usr succeeded")
 	}
+	if err := Relabel("/usr/", label, false); err == nil {
+		t.Fatalf("Relabel /usr/ succeeded")
+	}
+	if err := Relabel("/etc/passwd", label, false); err == nil {
+		t.Fatalf("Relabel /etc/passwd succeeded")
+	}
+	if home := os.Getenv("HOME"); home != "" {
+		if err := Relabel(home, label, false); err == nil {
+			t.Fatalf("Relabel %s succeeded", home)
+		}
+	}
 }
-
 func TestValidate(t *testing.T) {
 	if err := Validate("zZ"); err != ErrIncompatibleLabel {
 		t.Fatalf("Expected incompatible error, got %v", err)
