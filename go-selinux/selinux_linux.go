@@ -401,12 +401,12 @@ func SocketLabel() (string, error) {
 // SetKeyLabel takes a process label and tells the kernel to assign the
 // label to the next kernel keyring that gets created
 func SetKeyLabel(label string) error {
-	return writeCon(fmt.Sprintf("/proc/self/task/%d/attr/keycreate", syscall.Gettid()), label)
+	return writeCon("/proc/self/attr/keycreate", label)
 }
 
 // KeyLabel retrieves the current kernel keyring label setting
 func KeyLabel() (string, error) {
-	return readCon(fmt.Sprintf("/proc/self/task/%d/attr/keycreate", syscall.Gettid()))
+	return readCon("/proc/self/attr/keycreate")
 }
 
 // Get returns the Context as a string
