@@ -406,7 +406,21 @@ func SocketLabel() (string, error) {
 // SetKeyLabel takes a process label and tells the kernel to assign the
 // label to the next kernel keyring that gets created
 func SetKeyLabel(label string) error {
-	return writeCon("/proc/self/attr/keycreate", label)
+	if label == "" && GetEnabled() {
+		if _, err := KeyLabel(); err == io.EOF || os.IsNotExist(err) {
+			// If we got io.EOF err, this means it is the first time write "" to keycreate
+			// And in some old kernels before Linux 2.6.18, there is no keycreate file
+			// So we can ignore these errors
+			return nil
+		}
+	}
+	err := writeCon("/proc/self/attr/keycreate", label)
+	if os.IsNotExist(err) {
+		// For non empty label, In some old kernels before Linux 2.6.18,
+		// there is no keycreate file, so we can ignore it
+		return nil
+	}
+	return err
 }
 
 // KeyLabel retrieves the current kernel keyring label setting
