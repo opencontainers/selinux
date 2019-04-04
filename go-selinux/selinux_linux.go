@@ -333,11 +333,6 @@ func writeCon(fpath string, val string) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}
-	if val == "" {
-		if !GetEnabled() {
-			return nil
-		}
-	}
 
 	out, err := os.OpenFile(fpath, os.O_WRONLY, 0)
 	if err != nil {
@@ -349,6 +344,10 @@ func writeCon(fpath string, val string) error {
 		_, err = out.Write([]byte(val))
 	} else {
 		_, err = out.Write(nil)
+	}
+	// for some kernels, we can't write "" as label.
+	if val == "" {
+		return nil
 	}
 	return err
 }

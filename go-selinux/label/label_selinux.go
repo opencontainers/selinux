@@ -101,7 +101,15 @@ func FormatMountLabel(src, mountLabel string) string {
 // SetProcessLabel takes a process label and tells the kernel to assign the
 // label to the next program executed by the current process.
 func SetProcessLabel(processLabel string) error {
+	if processLabel == "" && selinux.GetEnabled() {
+		processLabel = "unconfined_u:unconfined_r:unconfined_t:s0"
+	}
 	return selinux.SetExecLabel(processLabel)
+}
+
+// ClearProcessLabel is to clear process's label
+func ClearProcessLabel() error {
+	return selinux.SetExecLabel("unconfined_u:unconfined_r:unconfined_t:s0")
 }
 
 // SetSocketLabel takes a process label and tells the kernel to assign the
@@ -118,7 +126,15 @@ func SocketLabel() (string, error) {
 // SetKeyLabel takes a process label and tells the kernel to assign the
 // label to the next kernel keyring that gets created
 func SetKeyLabel(processLabel string) error {
+	if processLabel == "" && selinux.GetEnabled() {
+		processLabel = "unconfined_u:unconfined_r:unconfined_t:s0"
+	}
 	return selinux.SetKeyLabel(processLabel)
+}
+
+// ClearKeyLabel is to clear key label
+func ClearKeyLabel() error {
+	return selinux.SetKeyLabel("unconfined_u:unconfined_r:unconfined_t:s0")
 }
 
 // KeyLabel retrieves the current default kernel keyring label setting

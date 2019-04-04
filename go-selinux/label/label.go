@@ -25,6 +25,10 @@ func SetProcessLabel(processLabel string) error {
 	return nil
 }
 
+func ClearProcessLabel() error {
+	return nil
+}
+
 func ProcessLabel() (string, error) {
 	return "", nil
 }
@@ -38,6 +42,10 @@ func SocketLabel() (string, error) {
 }
 
 func SetKeyLabel(processLabel string) error {
+	return nil
+}
+
+func ClearKeyLabel() error {
 	return nil
 }
 
