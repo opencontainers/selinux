@@ -109,6 +109,11 @@ func SocketLabel() (string, error) {
 	return "", nil
 }
 
+// PeerLabel retrieves the label of the client on the other side of a socket
+func PeerLabel(fd uintptr) (string, error) {
+	return "", nil
+}
+
 // SetKeyLabel takes a process label and tells the kernel to assign the
 // label to the next kernel keyring that gets created
 func SetKeyLabel(label string) error {
