@@ -410,7 +410,7 @@ func SetKeyLabel(label string) error {
 	if os.IsNotExist(err) {
 		return nil
 	}
-	if label == "" && os.IsPermission(err) && !GetEnabled() {
+	if label == "" && os.IsPermission(err) {
 		return nil
 	}
 	return err
