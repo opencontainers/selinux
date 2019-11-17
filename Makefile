@@ -1,3 +1,5 @@
+export GO111MODULE=off
+GO ?= go
 BUILDTAGS := selinux
 
 check-gopath:
@@ -17,3 +19,9 @@ lint:
 		echo "$$out"; \
 		exit 1; \
 	fi
+
+vendor:
+	export GO111MODULE=on \
+		$(GO) mod tidy && \
+		$(GO) mod vendor && \
+		$(GO) mod verify
