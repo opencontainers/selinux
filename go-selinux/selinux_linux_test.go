@@ -35,6 +35,29 @@ func TestSetFileLabel(t *testing.T) {
 		t.Fatalf("FileLabel failed, returned %s expected %s", filelabel, con)
 	}
 }
+func TestKVMLabels(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	t.Log(labels)
+
+	plabel, flabel := KVMContainerLabels()
+	if plabel == "" {
+		t.Log("Failed to read kvm label")
+
+	}
+	t.Log(plabel)
+	t.Log(flabel)
+	if _, err := CanonicalizeContext(plabel); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CanonicalizeContext(flabel); err != nil {
+		t.Fatal(err)
+	}
+
+	ReleaseLabel(plabel)
+}
 
 func TestSELinux(t *testing.T) {
 	if !GetEnabled() {
@@ -49,7 +72,6 @@ func TestSELinux(t *testing.T) {
 	plabel, flabel = ContainerLabels()
 	t.Log(plabel)
 	t.Log(flabel)
-	ReleaseLabel(plabel)
 	plabel, flabel = ContainerLabels()
 	t.Log(plabel)
 	t.Log(flabel)
