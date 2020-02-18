@@ -37,7 +37,6 @@ const (
 	selinuxTag       = "SELINUX"
 	xattrNameSelinux = "security.selinux"
 	stRdOnly         = 0x01
-	selinuxfsMagic   = 0xf97cff8c
 )
 
 type selinuxState struct {
@@ -118,7 +117,8 @@ func verifySELinuxfsMount(mnt string) bool {
 		}
 		return false
 	}
-	if uint32(buf.Type) != uint32(selinuxfsMagic) {
+
+	if buf.Type != unix.SELINUX_MAGIC {
 		return false
 	}
 	if (buf.Flags & stRdOnly) != 0 {
