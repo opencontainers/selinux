@@ -63,6 +63,10 @@ var (
 	state       = selinuxState{
 		mcsList: make(map[string]bool),
 	}
+
+	// for attrPath()
+	attrPathOnce   sync.Once
+	haveThreadSelf bool
 )
 
 // Context is a representation of the SELinux label broken into 4 parts
@@ -381,6 +385,20 @@ func writeCon(fpath string, val string) error {
 }
 
 func attrPath(attr string) string {
+	// Linux >= 3.17 provides this
+	const threadSelfPrefix = "/proc/thread-self/attr"
+
+	attrPathOnce.Do(func() {
+		st, err := os.Stat(threadSelfPrefix)
+		if err == nil && st.Mode().IsDir() {
+			haveThreadSelf = true
+		}
+	})
+
+	if haveThreadSelf {
+		return path.Join(threadSelfPrefix, attr)
+	}
+
 	return path.Join("/proc/self/task/", strconv.Itoa(syscall.Gettid()), "/attr/", attr)
 }
 
