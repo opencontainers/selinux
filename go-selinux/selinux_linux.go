@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -317,7 +318,7 @@ SetFSCreateLabel tells kernel the label to create all file system objects
 created by this task. Setting label="" to return to default.
 */
 func SetFSCreateLabel(label string) error {
-	return writeCon(fmt.Sprintf("/proc/self/task/%d/attr/fscreate", syscall.Gettid()), label)
+	return writeAttr("fscreate", label)
 }
 
 /*
@@ -325,12 +326,12 @@ FSCreateLabel returns the default label the kernel which the kernel is using
 for file system objects created by this task. "" indicates default.
 */
 func FSCreateLabel() (string, error) {
-	return readCon(fmt.Sprintf("/proc/self/task/%d/attr/fscreate", syscall.Gettid()))
+	return readAttr("fscreate")
 }
 
 // CurrentLabel returns the SELinux label of the current process thread, or an error.
 func CurrentLabel() (string, error) {
-	return readCon(fmt.Sprintf("/proc/self/task/%d/attr/current", syscall.Gettid()))
+	return readAttr("current")
 }
 
 // PidLabel returns the SELinux label of the given pid, or an error.
@@ -343,7 +344,7 @@ ExecLabel returns the SELinux label that the kernel will use for any programs
 that are executed by the current process thread, or an error.
 */
 func ExecLabel() (string, error) {
-	return readCon(fmt.Sprintf("/proc/self/task/%d/attr/exec", syscall.Gettid()))
+	return readAttr("exec")
 }
 
 func writeCon(fpath string, val string) error {
@@ -377,6 +378,18 @@ func writeCon(fpath string, val string) error {
 		return errors.Wrapf(err, "failed to set %s on procfs", fpath)
 	}
 	return nil
+}
+
+func attrPath(attr string) string {
+	return path.Join("/proc/self/task/", strconv.Itoa(syscall.Gettid()), "/attr/", attr)
+}
+
+func readAttr(attr string) (string, error) {
+	return readCon(attrPath(attr))
+}
+
+func writeAttr(attr, val string) error {
+	return writeCon(attrPath(attr), val)
 }
 
 /*
@@ -415,7 +428,7 @@ SetExecLabel sets the SELinux label that the kernel will use for any programs
 that are executed by the current process thread, or an error.
 */
 func SetExecLabel(label string) error {
-	return writeCon(fmt.Sprintf("/proc/self/task/%d/attr/exec", syscall.Gettid()), label)
+	return writeAttr("exec", label)
 }
 
 /*
@@ -423,18 +436,18 @@ SetTaskLabel sets the SELinux label for the current thread, or an error.
 This requires the dyntransition permission.
 */
 func SetTaskLabel(label string) error {
-	return writeCon(fmt.Sprintf("/proc/self/task/%d/attr/current", syscall.Gettid()), label)
+	return writeAttr("current", label)
 }
 
 // SetSocketLabel takes a process label and tells the kernel to assign the
 // label to the next socket that gets created
 func SetSocketLabel(label string) error {
-	return writeCon(fmt.Sprintf("/proc/self/task/%d/attr/sockcreate", syscall.Gettid()), label)
+	return writeAttr("sockcreate", label)
 }
 
 // SocketLabel retrieves the current socket label setting
 func SocketLabel() (string, error) {
-	return readCon(fmt.Sprintf("/proc/self/task/%d/attr/sockcreate", syscall.Gettid()))
+	return readAttr("sockcreate")
 }
 
 // PeerLabel retrieves the label of the client on the other side of a socket
