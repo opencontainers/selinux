@@ -175,3 +175,28 @@ func TestFindSELinuxfsInMountinfo(t *testing.T) {
 		}
 	}
 }
+
+func TestSecurityCheckContext(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	// check with valid context
+	context, err := CurrentLabel()
+	if err != nil {
+		t.Fatalf("CurrentLabel() error: %v", err)
+	}
+	if context != "" {
+		t.Logf("SecurityCheckContext(%q)", context)
+		err = SecurityCheckContext(context)
+		if err != nil {
+			t.Errorf("SecurityCheckContext(%q) error: %v", context, err)
+		}
+	}
+
+	context = "not-syntactically-valid"
+	err = SecurityCheckContext(context)
+	if err == nil {
+		t.Errorf("SecurityCheckContext(%q) succeeded, expected to fail", context)
+	}
+}

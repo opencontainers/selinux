@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -505,19 +506,18 @@ func ReserveLabel(label string) {
 }
 
 func selinuxEnforcePath() string {
-	return fmt.Sprintf("%s/enforce", getSelinuxMountPoint())
+	return path.Join(getSelinuxMountPoint(), "enforce")
 }
 
 // EnforceMode returns the current SELinux mode Enforcing, Permissive, Disabled
 func EnforceMode() int {
 	var enforce int
 
-	enforceS, err := readCon(selinuxEnforcePath())
+	enforceB, err := ioutil.ReadFile(selinuxEnforcePath())
 	if err != nil {
 		return -1
 	}
-
-	enforce, err = strconv.Atoi(string(enforceS))
+	enforce, err = strconv.Atoi(string(enforceB))
 	if err != nil {
 		return -1
 	}
@@ -529,7 +529,7 @@ SetEnforceMode sets the current SELinux mode Enforcing, Permissive.
 Disabled is not valid, since this needs to be set at boot time.
 */
 func SetEnforceMode(mode int) error {
-	return writeCon(selinuxEnforcePath(), fmt.Sprintf("%d", mode))
+	return ioutil.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0644)
 }
 
 /*
@@ -711,7 +711,7 @@ exit:
 
 // SecurityCheckContext validates that the SELinux label is understood by the kernel
 func SecurityCheckContext(val string) error {
-	return writeCon(fmt.Sprintf("%s/context", getSelinuxMountPoint()), val)
+	return ioutil.WriteFile(path.Join(getSelinuxMountPoint(), "context"), []byte(val), 0644)
 }
 
 /*
