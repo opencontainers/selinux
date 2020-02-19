@@ -255,10 +255,17 @@ func getSELinuxPolicyRoot() string {
 	return filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
 }
 
-func isProcHandle(fh *os.File) (bool, error) {
+func isProcHandle(fh *os.File) error {
 	var buf unix.Statfs_t
 	err := unix.Fstatfs(int(fh.Fd()), &buf)
-	return buf.Type == unix.PROC_SUPER_MAGIC, err
+	if err != nil {
+		return fmt.Errorf("statfs(%q) failed: %v", fh.Name(), err)
+	}
+	if buf.Type != unix.PROC_SUPER_MAGIC {
+		return fmt.Errorf("file %q is not on procfs", fh.Name())
+	}
+
+	return nil
 }
 
 func readCon(fpath string) (string, error) {
@@ -272,10 +279,8 @@ func readCon(fpath string) (string, error) {
 	}
 	defer in.Close()
 
-	if ok, err := isProcHandle(in); err != nil {
+	if err := isProcHandle(in); err != nil {
 		return "", err
-	} else if !ok {
-		return "", fmt.Errorf("%s not on procfs", fpath)
 	}
 
 	var retval string
@@ -347,7 +352,7 @@ func ExecLabel() (string, error) {
 	return readCon(fmt.Sprintf("/proc/self/task/%d/attr/exec", syscall.Gettid()))
 }
 
-func writeCon(fpath string, val string) error {
+func writeCon(fpath, val string) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}
@@ -363,10 +368,8 @@ func writeCon(fpath string, val string) error {
 	}
 	defer out.Close()
 
-	if ok, err := isProcHandle(out); err != nil {
+	if err := isProcHandle(out); err != nil {
 		return err
-	} else if !ok {
-		return fmt.Errorf("%s not on procfs", fpath)
 	}
 
 	if val != "" {
