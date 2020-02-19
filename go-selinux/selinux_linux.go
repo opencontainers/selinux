@@ -166,18 +166,18 @@ func findSELinuxfs() string {
 // if there is one, or an empty string in case of EOF or error.
 func findSELinuxfsMount(s *bufio.Scanner) string {
 	for s.Scan() {
-		txt := s.Text()
+		txt := s.Bytes()
 		// The first field after - is fs type.
 		// Safe as spaces in mountpoints are encoded as \040
-		if !strings.Contains(txt, " - selinuxfs ") {
+		if !bytes.Contains(txt, []byte(" - selinuxfs ")) {
 			continue
 		}
 		const mPos = 5 // mount point is 5th field
-		fields := strings.SplitN(txt, " ", mPos+1)
+		fields := bytes.SplitN(txt, []byte(" "), mPos+1)
 		if len(fields) < mPos+1 {
 			continue
 		}
-		return fields[mPos-1]
+		return string(fields[mPos-1])
 	}
 
 	return ""
