@@ -53,9 +53,6 @@ func TestSELinux(t *testing.T) {
 	t.Log(plabel)
 	t.Log(flabel)
 	ReleaseLabel(plabel)
-	t.Log("Enforcing Mode", EnforceMode())
-	mode := DefaultEnforceMode()
-	t.Log("Default Enforce Mode ", mode)
 
 	plabel, flabel = ContainerLabels()
 	t.Log(plabel)
@@ -66,15 +63,6 @@ func TestSELinux(t *testing.T) {
 	t.Log(plabel)
 	t.Log(flabel)
 	ReleaseLabel(plabel)
-
-	defer SetEnforceMode(mode)
-	if err := SetEnforceMode(Enforcing); err != nil {
-		t.Fatalf("enforcing selinux failed: %v", err)
-	}
-	if err := SetEnforceMode(Permissive); err != nil {
-		t.Fatalf("setting selinux mode to permissive failed: %v", err)
-	}
-	SetEnforceMode(mode)
 
 	pid := os.Getpid()
 	t.Logf("PID:%d MCS:%s\n", pid, intToMcs(pid, 1023))
@@ -93,6 +81,27 @@ func TestSELinux(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(PidLabel(1))
+}
+
+func TestSetEnforceMode(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+	if os.Geteuid() != 0 {
+		t.Skip("root required, skipping")
+	}
+
+	t.Log("Enforcing Mode:", EnforceMode())
+	mode := DefaultEnforceMode()
+	t.Log("Default Enforce Mode:", mode)
+	defer SetEnforceMode(mode)
+
+	if err := SetEnforceMode(Enforcing); err != nil {
+		t.Fatalf("setting selinux mode to enforcing failed: %v", err)
+	}
+	if err := SetEnforceMode(Permissive); err != nil {
+		t.Fatalf("setting selinux mode to permissive failed: %v", err)
+	}
 }
 
 func TestCanonicalizeContext(t *testing.T) {
@@ -164,5 +173,30 @@ func TestFindSELinuxfsInMountinfo(t *testing.T) {
 		if mnt != expected {
 			t.Fatalf("expected %q, got %q", expected, mnt)
 		}
+	}
+}
+
+func TestSecurityCheckContext(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	// check with valid context
+	context, err := CurrentLabel()
+	if err != nil {
+		t.Fatalf("CurrentLabel() error: %v", err)
+	}
+	if context != "" {
+		t.Logf("SecurityCheckContext(%q)", context)
+		err = SecurityCheckContext(context)
+		if err != nil {
+			t.Errorf("SecurityCheckContext(%q) error: %v", context, err)
+		}
+	}
+
+	context = "not-syntactically-valid"
+	err = SecurityCheckContext(context)
+	if err == nil {
+		t.Errorf("SecurityCheckContext(%q) succeeded, expected to fail", context)
 	}
 }

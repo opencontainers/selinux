@@ -38,7 +38,6 @@ const (
 	selinuxTag       = "SELINUX"
 	xattrNameSelinux = "security.selinux"
 	stRdOnly         = 0x01
-	selinuxfsMagic   = 0xf97cff8c
 )
 
 type selinuxState struct {
@@ -115,7 +114,8 @@ func verifySELinuxfsMount(mnt string) bool {
 		}
 		return false
 	}
-	if uint32(buf.Type) != uint32(selinuxfsMagic) {
+
+	if buf.Type != unix.SELINUX_MAGIC {
 		return false
 	}
 	if (buf.Flags & stRdOnly) != 0 {
@@ -247,10 +247,17 @@ func getSELinuxPolicyRoot() string {
 	return filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
 }
 
-func isProcHandle(fh *os.File) (bool, error) {
+func isProcHandle(fh *os.File) error {
 	var buf unix.Statfs_t
 	err := unix.Fstatfs(int(fh.Fd()), &buf)
-	return buf.Type == unix.PROC_SUPER_MAGIC, err
+	if err != nil {
+		return fmt.Errorf("statfs(%q) failed: %v", fh.Name(), err)
+	}
+	if buf.Type != unix.PROC_SUPER_MAGIC {
+		return fmt.Errorf("file %q is not on procfs", fh.Name())
+	}
+
+	return nil
 }
 
 func readCon(fpath string) (string, error) {
@@ -264,10 +271,8 @@ func readCon(fpath string) (string, error) {
 	}
 	defer in.Close()
 
-	if ok, err := isProcHandle(in); err != nil {
+	if err := isProcHandle(in); err != nil {
 		return "", err
-	} else if !ok {
-		return "", fmt.Errorf("%s not on procfs", fpath)
 	}
 
 	var retval string
@@ -339,7 +344,7 @@ func ExecLabel() (string, error) {
 	return readAttr("exec")
 }
 
-func writeCon(fpath string, val string) error {
+func writeCon(fpath, val string) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}
@@ -355,10 +360,8 @@ func writeCon(fpath string, val string) error {
 	}
 	defer out.Close()
 
-	if ok, err := isProcHandle(out); err != nil {
+	if err := isProcHandle(out); err != nil {
 		return err
-	} else if !ok {
-		return fmt.Errorf("%s not on procfs", fpath)
 	}
 
 	if val != "" {
@@ -524,19 +527,18 @@ func ReserveLabel(label string) {
 }
 
 func selinuxEnforcePath() string {
-	return fmt.Sprintf("%s/enforce", getSelinuxMountPoint())
+	return path.Join(getSelinuxMountPoint(), "enforce")
 }
 
 // EnforceMode returns the current SELinux mode Enforcing, Permissive, Disabled
 func EnforceMode() int {
 	var enforce int
 
-	enforceS, err := readCon(selinuxEnforcePath())
+	enforceB, err := ioutil.ReadFile(selinuxEnforcePath())
 	if err != nil {
 		return -1
 	}
-
-	enforce, err = strconv.Atoi(string(enforceS))
+	enforce, err = strconv.Atoi(string(enforceB))
 	if err != nil {
 		return -1
 	}
@@ -548,7 +550,7 @@ SetEnforceMode sets the current SELinux mode Enforcing, Permissive.
 Disabled is not valid, since this needs to be set at boot time.
 */
 func SetEnforceMode(mode int) error {
-	return writeCon(selinuxEnforcePath(), fmt.Sprintf("%d", mode))
+	return ioutil.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0644)
 }
 
 /*
@@ -730,7 +732,7 @@ exit:
 
 // SecurityCheckContext validates that the SELinux label is understood by the kernel
 func SecurityCheckContext(val string) error {
-	return writeCon(fmt.Sprintf("%s/context", getSelinuxMountPoint()), val)
+	return ioutil.WriteFile(path.Join(getSelinuxMountPoint(), "context"), []byte(val), 0644)
 }
 
 /*
