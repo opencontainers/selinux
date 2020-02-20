@@ -41,11 +41,11 @@ const (
 )
 
 type selinuxState struct {
-	enabledSet   bool
-	enabled      bool
-	selinuxfsSet bool
-	selinuxfs    string
-	mcsList      map[string]bool
+	enabledSet    bool
+	enabled       bool
+	selinuxfsOnce sync.Once
+	selinuxfs     string
+	mcsList       map[string]bool
 	sync.Mutex
 }
 
@@ -96,14 +96,6 @@ func (s *selinuxState) getEnabled() bool {
 // SetDisabled disables selinux support for the package
 func SetDisabled() {
 	state.setEnable(false)
-}
-
-func (s *selinuxState) setSELinuxfs(selinuxfs string) string {
-	s.Lock()
-	defer s.Unlock()
-	s.selinuxfsSet = true
-	s.selinuxfs = selinuxfs
-	return s.selinuxfs
 }
 
 func verifySELinuxfsMount(mnt string) bool {
@@ -166,33 +158,29 @@ func findSELinuxfs() string {
 // if there is one, or an empty string in case of EOF or error.
 func findSELinuxfsMount(s *bufio.Scanner) string {
 	for s.Scan() {
-		txt := s.Text()
+		txt := s.Bytes()
 		// The first field after - is fs type.
 		// Safe as spaces in mountpoints are encoded as \040
-		if !strings.Contains(txt, " - selinuxfs ") {
+		if !bytes.Contains(txt, []byte(" - selinuxfs ")) {
 			continue
 		}
 		const mPos = 5 // mount point is 5th field
-		fields := strings.SplitN(txt, " ", mPos+1)
+		fields := bytes.SplitN(txt, []byte(" "), mPos+1)
 		if len(fields) < mPos+1 {
 			continue
 		}
-		return fields[mPos-1]
+		return string(fields[mPos-1])
 	}
 
 	return ""
 }
 
 func (s *selinuxState) getSELinuxfs() string {
-	s.Lock()
-	selinuxfs := s.selinuxfs
-	selinuxfsSet := s.selinuxfsSet
-	s.Unlock()
-	if selinuxfsSet {
-		return selinuxfs
-	}
+	s.selinuxfsOnce.Do(func() {
+		s.selinuxfs = findSELinuxfs()
+	})
 
-	return s.setSELinuxfs(findSELinuxfs())
+	return s.selinuxfs
 }
 
 // getSelinuxMountPoint returns the path to the mountpoint of an selinuxfs
