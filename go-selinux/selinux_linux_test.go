@@ -200,3 +200,27 @@ func TestSecurityCheckContext(t *testing.T) {
 		t.Errorf("SecurityCheckContext(%q) succeeded, expected to fail", context)
 	}
 }
+
+func TestComputeCreateContext(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	// This may or may not be in the loaded policy but any refpolicy based policy should have it
+	t.Logf("ComputeCreateContext(\"system_u:system_r:init_t:s0\", \"system_u:object_r:tmp_t:s0\", ClassIndex(\"file\"))")
+	context, err := ComputeCreateContext("system_u:system_r:init_t:s0", "system_u:object_r:tmp_t:s0", ClassIndex("file"))
+	if err != nil {
+		t.Errorf("ComputeCreateContext error: %v", err)
+	}
+	if context != "system_u:object_r:init_tmp_t:s0" {
+		t.Errorf("ComputeCreateContext unexpected answer %s, possibly not reference policy", context)
+	}
+
+	// Test to ensure that a bad context returns an error
+	t.Logf("ComputeCreateContext(\"badcon:s0\", \"system_u:object_r:tmp_t:s0\",ClassIndex(\"process\"))")
+	context, err = ComputeCreateContext("badcon:s0", "system_u:object_r:tmp_t:s0", ClassIndex("process"))
+	if err == nil {
+		t.Errorf("ComputeCreateContext(\"badcon:s0\", \"system_u:object_r:tmp_t:s0\",ClassIndex(\"process\")) succeeded, expected failure")
+	}
+
+}

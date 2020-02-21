@@ -56,7 +56,13 @@ func TestSELinux(t *testing.T) {
 	if _, err := CanonicalizeContext("foobar"); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := ComputeCreateContext("foobar"); err != nil {
+		t.Fatal(err)
+	}
 	if err := SetSocketLabel("foobar"); err != nil {
+		t.Fatal(err)
+	}
+	if index := ClassIndex("foobar"); index != -1 {
 		t.Fatal(err)
 	}
 	if _, err := SocketLabel(); err != nil {

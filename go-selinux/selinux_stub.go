@@ -35,6 +35,14 @@ func GetEnabled() bool {
 	return false
 }
 
+/*
+ClassIndex gets the number index of an object class from selinuxfs for use with
+ComputeCreateContext 
+*/
+func ClassIndex(class string) int {
+	return -1
+}
+
 // SetFileLabel sets the SELinux label for this path or returns an error.
 func SetFileLabel(fpath string, label string) error {
 	return nil
@@ -85,6 +93,13 @@ the function then returns the context that the kernel will use.  This function
 can be used to see if two contexts are equivalent
 */
 func CanonicalizeContext(val string) (string, error) {
+	return "", nil
+}
+
+/*
+ComputeCreateContext requests the type transition from source to target for class  from the kernel.
+*/
+func ComputeCreateContext(source string, target string, class int) (string, error) {
 	return "", nil
 }
 
