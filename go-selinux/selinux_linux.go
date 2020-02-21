@@ -280,6 +280,23 @@ func readCon(fpath string) (string, error) {
 	return strings.Trim(retval, "\x00"), nil
 }
 
+// ClassIndex returns the int index for an object class in the loaded policy, or -1 and an error
+func ClassIndex(class string) (int, error) {
+	permpath := fmt.Sprintf("class/%s/index", class)
+	indexpath := filepath.Join(getSelinuxMountPoint(), permpath)
+
+	indexB, err := ioutil.ReadFile(indexpath)
+	if err != nil {
+		return -1, err
+	}
+	index, err := strconv.Atoi(string(indexB))
+	if err != nil {
+		return -1, err
+	}
+
+	return index, nil
+}
+
 // SetFileLabel sets the SELinux label for this path or returns an error.
 func SetFileLabel(fpath string, label string) error {
 	if fpath == "" {
@@ -406,6 +423,18 @@ can be used to see if two contexts are equivalent
 */
 func CanonicalizeContext(val string) (string, error) {
 	return readWriteCon(filepath.Join(getSelinuxMountPoint(), "context"), val)
+}
+
+/*
+ComputeCreateContext requests the type transition from source to target for class  from the kernel.
+*/
+func ComputeCreateContext(source string, target string, class string) (string, error) {
+	classidx, err := ClassIndex(class)
+	if err != nil {
+		return "", err
+	}
+
+	return readWriteCon(filepath.Join(getSelinuxMountPoint(), "create"), fmt.Sprintf("%s %s %d", source, target, classidx))
 }
 
 func readWriteCon(fpath string, val string) (string, error) {
