@@ -17,7 +17,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
@@ -37,7 +36,6 @@ const (
 	selinuxTypeTag   = "SELINUXTYPE"
 	selinuxTag       = "SELINUX"
 	xattrNameSelinux = "security.selinux"
-	stRdOnly         = 0x01
 )
 
 type selinuxState struct {
@@ -103,13 +101,13 @@ func SetDisabled() {
 }
 
 func verifySELinuxfsMount(mnt string) bool {
-	var buf syscall.Statfs_t
+	var buf unix.Statfs_t
 	for {
-		err := syscall.Statfs(mnt, &buf)
+		err := unix.Statfs(mnt, &buf)
 		if err == nil {
 			break
 		}
-		if err == syscall.EAGAIN {
+		if err == unix.EAGAIN {
 			continue
 		}
 		return false
@@ -118,7 +116,7 @@ func verifySELinuxfsMount(mnt string) bool {
 	if uint32(buf.Type) != uint32(unix.SELINUX_MAGIC) {
 		return false
 	}
-	if (buf.Flags & stRdOnly) != 0 {
+	if (buf.Flags & unix.ST_RDONLY) != 0 {
 		return false
 	}
 
@@ -390,7 +388,7 @@ func attrPath(attr string) string {
 		return path.Join(threadSelfPrefix, attr)
 	}
 
-	return path.Join("/proc/self/task/", strconv.Itoa(syscall.Gettid()), "/attr/", attr)
+	return path.Join("/proc/self/task/", strconv.Itoa(unix.Gettid()), "/attr/", attr)
 }
 
 func readAttr(attr string) (string, error) {
@@ -461,7 +459,7 @@ func SocketLabel() (string, error) {
 
 // PeerLabel retrieves the label of the client on the other side of a socket
 func PeerLabel(fd uintptr) (string, error) {
-	return unix.GetsockoptString(int(fd), syscall.SOL_SOCKET, syscall.SO_PEERSEC)
+	return unix.GetsockoptString(int(fd), unix.SOL_SOCKET, unix.SO_PEERSEC)
 }
 
 // SetKeyLabel takes a process label and tells the kernel to assign the
