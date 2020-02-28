@@ -285,7 +285,7 @@ func SetFileLabel(fpath string, label string) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}
-	if err := lsetxattr(fpath, xattrNameSelinux, []byte(label), 0); err != nil {
+	if err := unix.Lsetxattr(fpath, xattrNameSelinux, []byte(label), 0); err != nil {
 		return errors.Wrapf(err, "failed to set file label on %s", fpath)
 	}
 	return nil
