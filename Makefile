@@ -2,6 +2,26 @@ export GO111MODULE=off
 GO ?= go
 BUILDTAGS := selinux
 
+all: build build-cross
+
+define go-build
+	GOOS=$(1) GOARCH=$(2) $(GO) build -tags $(BUILDTAGS) ./...
+endef
+
+.PHONY:
+build:
+	$(call go-build,linux,amd64)
+
+.PHONY:
+build-cross:
+	$(call go-build,linux,386)
+	$(call go-build,linux,arm)
+	$(call go-build,linux,arm64)
+	$(call go-build,linux,ppc64le)
+	$(call go-build,linux,s390x)
+	$(call go-build,windows,amd64)
+	$(call go-build,windows,386)
+
 check-gopath:
 ifndef GOPATH
 	$(error GOPATH is not set)
