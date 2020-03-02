@@ -35,7 +35,7 @@ func InitLabels(options []string) (plabel string, mlabel string, Err error) {
 	if processLabel != "" {
 		defer func() {
 			if Err != nil {
-				ReleaseLabel(mountLabel)
+				selinux.ReleaseLabel(mountLabel)
 			}
 		}()
 		pcon, err := selinux.NewContext(processLabel)
@@ -67,10 +67,10 @@ func InitLabels(options []string) (plabel string, mlabel string, Err error) {
 				mcon[con[0]] = con[1]
 			}
 		}
-		_ = ReleaseLabel(processLabel)
+		selinux.ReleaseLabel(processLabel)
 		processLabel = pcon.Get()
 		mountLabel = mcon.Get()
-		_ = ReserveLabel(processLabel)
+		selinux.ReserveLabel(processLabel)
 	}
 	return processLabel, mountLabel, nil
 }
