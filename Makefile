@@ -22,6 +22,10 @@ build-cross:
 	$(call go-build,windows,amd64)
 	$(call go-build,windows,386)
 
+BUILD_PATH := $(shell pwd)/build
+BUILD_BIN_PATH := ${BUILD_PATH}/bin
+GOLANGCI_LINT := ${BUILD_BIN_PATH}/golangci-lint
+
 check-gopath:
 ifndef GOPATH
 	$(error GOPATH is not set)
@@ -32,13 +36,18 @@ test: check-gopath
 	go test -timeout 3m -tags "${BUILDTAGS}" ${TESTFLAGS} -v ./...
 	go test -timeout 3m ${TESTFLAGS} -v ./...
 
+${GOLANGCI_LINT}:
+	export \
+		VERSION=v1.23.7 \
+		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
+		BINDIR=${BUILD_BIN_PATH} && \
+	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
+
 .PHONY:
-lint:
-	@out="$$(golint go-selinux)"; \
-	if [ -n "$$out" ]; then \
-		echo "$$out"; \
-		exit 1; \
-	fi
+lint: ${GOLANGCI_LINT}
+	${GOLANGCI_LINT} version
+	${GOLANGCI_LINT} linters
+	${GOLANGCI_LINT} run
 
 vendor:
 	export GO111MODULE=on \

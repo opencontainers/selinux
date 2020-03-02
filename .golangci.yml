@@ -1,0 +1,22 @@
+---
+run:
+  build-tags:
+    - selinux
+  concurrency: 6
+  deadline: 5m
+linters:
+  enable-all: true
+  disable:
+    - errcheck
+    - funlen
+    - gochecknoglobals
+    - gocognit
+    - gocritic
+    - golint
+    - gomnd
+    - ineffassign
+    - lll
+    - staticcheck
+    - stylecheck
+    - whitespace
+    - wsl
