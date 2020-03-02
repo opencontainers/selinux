@@ -9,44 +9,14 @@ func InitLabels(options []string) (string, string, error) {
 	return "", "", nil
 }
 
-func ROMountLabel() string {
-	return ""
-}
-
+// Deprecated: The GenLabels function is only to be used during the transition
+// to the official API. Use InitLabels(strings.Fields(options)) instead.
 func GenLabels(options string) (string, string, error) {
 	return "", "", nil
 }
 
 func FormatMountLabel(src string, mountLabel string) string {
 	return src
-}
-
-func SetProcessLabel(processLabel string) error {
-	return nil
-}
-
-func ProcessLabel() (string, error) {
-	return "", nil
-}
-
-func SetSocketLabel(processLabel string) error {
-	return nil
-}
-
-func SocketLabel() (string, error) {
-	return "", nil
-}
-
-func SetKeyLabel(processLabel string) error {
-	return nil
-}
-
-func KeyLabel() (string, error) {
-	return "", nil
-}
-
-func FileLabel(path string) (string, error) {
-	return "", nil
 }
 
 func SetFileLabel(path string, fileLabel string) error {
@@ -61,35 +31,10 @@ func Relabel(path string, fileLabel string, shared bool) error {
 	return nil
 }
 
-func PidLabel(pid int) (string, error) {
-	return "", nil
-}
-
-func Init() {
-}
-
-// ClearLabels clears all reserved labels
-func ClearLabels() {
-	return
-}
-
-func ReserveLabel(label string) error {
-	return nil
-}
-
-func ReleaseLabel(label string) error {
-	return nil
-}
-
-// DupSecOpt takes a process label and returns security options that
-// can be used to set duplicate labels on future container processes
-func DupSecOpt(src string) ([]string, error) {
-	return nil, nil
-}
-
 // DisableSecOpt returns a security opt that can disable labeling
 // support for future container processes
 func DisableSecOpt() []string {
+	// TODO the selinux.DisableSecOpt stub returns []string{"disable"} instead of "nil"
 	return nil
 }
 
