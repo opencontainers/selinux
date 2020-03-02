@@ -101,29 +101,25 @@ func FormatMountLabel(src, mountLabel string) string {
 
 // SetFileLabel modifies the "path" label to the specified file label
 func SetFileLabel(path string, fileLabel string) error {
-	if selinux.GetEnabled() && fileLabel != "" {
-		return selinux.SetFileLabel(path, fileLabel)
+	if !selinux.GetEnabled() || fileLabel == "" {
+		return nil
 	}
-	return nil
+	return selinux.SetFileLabel(path, fileLabel)
 }
 
 // SetFileCreateLabel tells the kernel the label for all files to be created
 func SetFileCreateLabel(fileLabel string) error {
-	if selinux.GetEnabled() {
-		return selinux.SetFSCreateLabel(fileLabel)
+	if !selinux.GetEnabled() {
+		return nil
 	}
-	return nil
+	return selinux.SetFSCreateLabel(fileLabel)
 }
 
 // Relabel changes the label of path to the filelabel string.
 // It changes the MCS label to s0 if shared is true.
 // This will allow all containers to share the content.
 func Relabel(path string, fileLabel string, shared bool) error {
-	if !selinux.GetEnabled() {
-		return nil
-	}
-
-	if fileLabel == "" {
+	if !selinux.GetEnabled() || fileLabel == "" {
 		return nil
 	}
 
