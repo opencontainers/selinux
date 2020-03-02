@@ -495,10 +495,10 @@ func PeerLabel(fd uintptr) (string, error) {
 // label to the next kernel keyring that gets created
 func SetKeyLabel(label string) error {
 	err := writeCon("/proc/self/attr/keycreate", label)
-	if os.IsNotExist(err) {
+	if os.IsNotExist(errors.Cause(err)) {
 		return nil
 	}
-	if label == "" && os.IsPermission(err) {
+	if label == "" && os.IsPermission(errors.Cause(err)) {
 		return nil
 	}
 	return err
@@ -820,7 +820,7 @@ func Chcon(fpath string, label string, recurse bool) error {
 	}
 	callback := func(p string, info os.FileInfo, err error) error {
 		e := SetFileLabel(p, label)
-		if os.IsNotExist(e) {
+		if os.IsNotExist(errors.Cause(e)) {
 			return nil
 		}
 		return e
