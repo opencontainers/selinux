@@ -75,11 +75,13 @@ func InitLabels(options []string) (plabel string, mlabel string, Err error) {
 	return processLabel, mountLabel, nil
 }
 
+// Deprecated: use selinux.ROFileLabel
 func ROMountLabel() string {
 	return selinux.ROFileLabel()
 }
 
-// DEPRECATED: The GenLabels function is only to be used during the transition to the official API.
+// Deprecated: The GenLabels function is only to be used during the transition
+// to the official API. Use InitLabels(strings.Fields(options)) instead.
 func GenLabels(options string) (string, string, error) {
 	return InitLabels(strings.Fields(options))
 }
@@ -104,28 +106,33 @@ func FormatMountLabel(src, mountLabel string) string {
 
 // SetProcessLabel takes a process label and tells the kernel to assign the
 // label to the next program executed by the current process.
+// Deprecated: use selinux.SetExecLabel
 func SetProcessLabel(processLabel string) error {
 	return selinux.SetExecLabel(processLabel)
 }
 
 // SetSocketLabel takes a process label and tells the kernel to assign the
 // label to the next socket that gets created
+// Deprecated: use selinux.SetSocketLabel
 func SetSocketLabel(processLabel string) error {
 	return selinux.SetSocketLabel(processLabel)
 }
 
 // SocketLabel retrieves the current default socket label setting
+// Deprecated: use selinux.SocketLabel
 func SocketLabel() (string, error) {
 	return selinux.SocketLabel()
 }
 
 // SetKeyLabel takes a process label and tells the kernel to assign the
 // label to the next kernel keyring that gets created
+// Deprecated: use selinux.SetKeyLabel
 func SetKeyLabel(processLabel string) error {
 	return selinux.SetKeyLabel(processLabel)
 }
 
 // KeyLabel retrieves the current default kernel keyring label setting
+// Deprecated: use selinux.KeyLabel
 func KeyLabel() (string, error) {
 	return selinux.KeyLabel()
 }
@@ -133,11 +140,13 @@ func KeyLabel() (string, error) {
 // ProcessLabel returns the process label that the kernel will assign
 // to the next program executed by the current process.  If "" is returned
 // this indicates that the default labeling will happen for the process.
+// Deprecated: use selinux.ExecLabel
 func ProcessLabel() (string, error) {
 	return selinux.ExecLabel()
 }
 
 // FileLabel returns the label for specified path
+// Deprecated: use selinux.FileLabel
 func FileLabel(path string) (string, error) {
 	return selinux.FileLabel(path)
 }
@@ -230,6 +239,7 @@ func Relabel(path string, fileLabel string, shared bool) error {
 }
 
 // PidLabel will return the label of the process running with the specified pid
+// Deprecated: use selinux.PidLabel
 func PidLabel(pid int) (string, error) {
 	return selinux.PidLabel(pid)
 }
@@ -240,6 +250,7 @@ func Init() {
 }
 
 // ClearLabels will clear all reserved labels
+// Deprecated: use selinux.ClearLabels
 func ClearLabels() {
 	selinux.ClearLabels()
 }
@@ -247,6 +258,7 @@ func ClearLabels() {
 // ReserveLabel will record the fact that the MCS label has already been used.
 // This will prevent InitLabels from using the MCS label in a newly created
 // container
+// Deprecated: use selinux.ReserveLabel
 func ReserveLabel(label string) error {
 	selinux.ReserveLabel(label)
 	return nil
@@ -255,6 +267,7 @@ func ReserveLabel(label string) error {
 // ReleaseLabel will remove the reservation of the MCS label.
 // This will allow InitLabels to use the MCS label in a newly created
 // containers
+// Deprecated: use selinux.ReleaseLabel
 func ReleaseLabel(label string) error {
 	selinux.ReleaseLabel(label)
 	return nil
@@ -262,12 +275,14 @@ func ReleaseLabel(label string) error {
 
 // DupSecOpt takes a process label and returns security options that
 // can be used to set duplicate labels on future container processes
+// Deprecated: use selinux.DupSecOpt
 func DupSecOpt(src string) ([]string, error) {
 	return selinux.DupSecOpt(src)
 }
 
 // DisableSecOpt returns a security opt that can disable labeling
 // support for future container processes
+// Deprecated: use selinux.DisableSecOpt
 func DisableSecOpt() []string {
 	return selinux.DisableSecOpt()
 }
