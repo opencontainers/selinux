@@ -200,3 +200,52 @@ func TestSecurityCheckContext(t *testing.T) {
 		t.Errorf("SecurityCheckContext(%q) succeeded, expected to fail", context)
 	}
 }
+
+func TestClassIndex(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	idx, err := ClassIndex("process")
+	if err != nil {
+		t.Errorf("Classindex error: %v", err)
+	}
+	// Every known policy has process as index 2, but it isn't guaranteed
+	if idx != 2 {
+		t.Errorf("ClassIndex unexpected answer %d, possibly not reference policy", idx)
+	}
+
+	idx, err = ClassIndex("foobar")
+	if err == nil {
+		t.Errorf("ClassIndex(\"foobar\") succeeded, expected to fail:")
+	}
+
+}
+func TestComputeCreateContext(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	// This may or may not be in the loaded policy but any refpolicy based policy should have it
+	init := "system_u:system_r:init_t:s0"
+	tmp := "system_u:object_r:tmp_t:s0"
+	file := "file"
+	t.Logf("ComputeCreateContext(%s, %s, %s)", init, tmp, file)
+	context, err := ComputeCreateContext(init, tmp, file)
+	if err != nil {
+		t.Errorf("ComputeCreateContext error: %v", err)
+	}
+	if context != "system_u:object_r:init_tmp_t:s0" {
+		t.Errorf("ComputeCreateContext unexpected answer %s, possibly not reference policy", context)
+	}
+
+	badcon := "badcon"
+	process := "process"
+	// Test to ensure that a bad context returns an error
+	t.Logf("ComputeCreateContext(%s, %s, %s)", badcon, tmp, process)
+	context, err = ComputeCreateContext(badcon, tmp, process)
+	if err == nil {
+		t.Errorf("ComputeCreateContext(%s, %s, %s) succeeded, expected failure", badcon, tmp, process)
+	}
+
+}
