@@ -28,7 +28,3 @@ func lgetxattr(path string, attr string) ([]byte, error) {
 
 	return dest[:sz], nil
 }
-
-func lsetxattr(path string, attr string, data []byte, flags int) error {
-	return unix.Lsetxattr(path, attr, data, flags)
-}
