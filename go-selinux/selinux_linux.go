@@ -824,7 +824,7 @@ func Chcon(fpath string, label string, recurse bool) error {
 		return SetFileLabel(fpath, label)
 	}
 
-	return godirwalk.Walk(fpath, &godirwalk.Options{
+	return Walk(fpath, &godirwalk.Options{
 		Callback: func(p string, _ *godirwalk.Dirent) error {
 			e := SetFileLabel(p, label)
 			if os.IsNotExist(errors.Cause(e)) {
