@@ -40,7 +40,6 @@ func Walk(root string, options *godirwalk.Options) error {
 // allowing you to handle each item concurrently.  A maximum of limit walkFns will
 // be called at any one time.
 func WalkLimit(root string, options *godirwalk.Options, limit int) error {
-
 	// make sure limit is sensible
 	if limit < 1 {
 		panic("powerwalk: limit must be greater than zero.")
@@ -56,7 +55,7 @@ func WalkLimit(root string, options *godirwalk.Options, limit int) error {
 	errs := make(chan error)
 
 	for i := 0; i < limit; i++ {
-		go func(i int) {
+		go func() {
 			for {
 				select {
 				case file, ok := <-files:
@@ -71,7 +70,7 @@ func WalkLimit(root string, options *godirwalk.Options, limit int) error {
 					return
 				}
 			}
-		}(i)
+		}()
 	}
 
 	var walkErr error
@@ -100,17 +99,14 @@ func WalkLimit(root string, options *godirwalk.Options, limit int) error {
 				return errors.New("kill received while walking")
 			default:
 				filesWg.Add(1)
-				select {
-				case files <- &walkArgs{path: p, info: info}:
-				}
+				files <- &walkArgs{path: p, info: info}
 				return nil
 			}
 		}
-		godirwalk.Walk(root, &opts)
+		_ = godirwalk.Walk(root, &opts)
 
 		// everything is done
 		walkerWg.Done()
-
 	}()
 
 	// wait for all walker calls
