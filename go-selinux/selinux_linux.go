@@ -818,19 +818,18 @@ func Chcon(fpath string, label string, recurse bool) error {
 	if err := badPrefix(fpath); err != nil {
 		return err
 	}
-	callback := func(p string, info os.FileInfo, err error) error {
+
+	if !recurse {
+		return SetFileLabel(fpath, label)
+	}
+
+	return filepath.Walk(fpath, func(p string, info os.FileInfo, err error) error {
 		e := SetFileLabel(p, label)
 		if os.IsNotExist(errors.Cause(e)) {
 			return nil
 		}
 		return e
-	}
-
-	if recurse {
-		return filepath.Walk(fpath, callback)
-	}
-
-	return SetFileLabel(fpath, label)
+	})
 }
 
 // DupSecOpt takes an SELinux process label and returns security options that
