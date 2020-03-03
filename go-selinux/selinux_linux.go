@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )
@@ -823,12 +824,15 @@ func Chcon(fpath string, label string, recurse bool) error {
 		return SetFileLabel(fpath, label)
 	}
 
-	return filepath.Walk(fpath, func(p string, info os.FileInfo, err error) error {
-		e := SetFileLabel(p, label)
-		if os.IsNotExist(errors.Cause(e)) {
-			return nil
-		}
-		return e
+	return godirwalk.Walk(fpath, &godirwalk.Options{
+		Callback: func(p string, _ *godirwalk.Dirent) error {
+			e := SetFileLabel(p, label)
+			if os.IsNotExist(errors.Cause(e)) {
+				return nil
+			}
+			return e
+		},
+		Unsorted: true,
 	})
 }
 
