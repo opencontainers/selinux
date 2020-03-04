@@ -8,116 +8,83 @@ package selinux
  */
 
 import (
+	"runtime"
 	"sync"
 
 	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 )
 
-// DefaultConcurrentWalks is the default number of files that will be walked at the
-// same time when the Walk function is called.
-// To use a value other than this one, use the WalkLimit function.
-const DefaultConcurrentWalks int = 100
-
-// Walk walks the file tree rooted at root, calling walkFn for each file or
-// directory in the tree, including root. All errors that arise visiting files
-// and directories are filtered by walkFn. The output is non-deterministic.
-// WalkLimit does not follow symbolic links.
+// Walk walks the file tree rooted at root, calling options.Callback
+// for each file or directory in the tree, including root. All errors
+// that arise visiting files and directories are filtered by Callback.
+// The output is non-deterministic.
 //
 // For each file and directory encountered, Walk will trigger a new Go routine
-// allowing you to handle each item concurrently.  A maximum of DefaultConcurrentWalks
-// walkFns will be called at any one time.
+// allowing you to handle each item concurrently. A maximum of twice the
+// runtime.NumCPU() Callback goroutines will be called at any one time.
 func Walk(root string, options *godirwalk.Options) error {
-	return WalkLimit(root, options, DefaultConcurrentWalks)
+	return WalkLimit(root, options, runtime.NumCPU()*2)
 }
 
-// WalkLimit walks the file tree rooted at root, calling walkFn for each file or
-// directory in the tree, including root. All errors that arise visiting files
-// and directories are filtered by walkFn. The output is non-deterministic.
-// WalkLimit does not follow symbolic links.
+// WalkLimit walks the file tree rooted at root, calling options.Callback
+// for each file or directory in the tree, including root. All errors
+// that arise visiting files and directories are filtered by Callback.
+// The output is non-deterministic.
 //
 // For each file and directory encountered, Walk will trigger a new Go routine
-// allowing you to handle each item concurrently.  A maximum of limit walkFns will
-// be called at any one time.
+// allowing you to handle each item concurrently. A maximum of limit
+// Callback goroutines will be called at any one time.
 func WalkLimit(root string, options *godirwalk.Options, limit int) error {
 	// make sure limit is sensible
 	if limit < 1 {
-		panic("powerwalk: limit must be greater than zero.")
+		return errors.Errorf("walk(%q): limit must be greater than zero", root)
 	}
 
-	// filesMg is a wait group that waits for all files to
-	// be processed before finishing.
-	var filesWg sync.WaitGroup
+	files := make(chan *walkArgs, 128)
+	errCh := make(chan error, 1) // get the first error, ignore others
+	// save the original callback func
+	callback := options.Callback
 
-	// files is a channel that receives lists of channels
-	files := make(chan *walkArgs)
-	kill := make(chan struct{})
-	errs := make(chan error)
-
-	for i := 0; i < limit; i++ {
-		go func() {
-			for {
-				select {
-				case file, ok := <-files:
-					if !ok {
-						continue
-					}
-					if err := options.Callback(file.path, file.info); err != nil {
-						errs <- err
-					}
-					filesWg.Done()
-				case <-kill:
-					return
-				}
-			}
-		}()
-	}
-
-	var walkErr error
-
-	// check for errors
+	// Start walking a tree asap
+	var err error
 	go func() {
-		select {
-		case walkErr = <-errs:
-			close(kill)
-		case <-kill:
-			return
-		}
-	}()
-
-	// setup a waitgroup and wait for everything to
-	// be done
-	var walkerWg sync.WaitGroup
-	walkerWg.Add(1)
-
-	go func() {
-		opts := *options
-		opts.Callback = func(p string, info *godirwalk.Dirent) error {
+		options.Callback = func(p string, info *godirwalk.Dirent) error {
+			// add more files to the queue unless there's an error
 			select {
-			case <-kill:
+			case e := <-errCh:
 				close(files)
-				return errors.New("kill received while walking")
+				return e
 			default:
-				filesWg.Add(1)
 				files <- &walkArgs{path: p, info: info}
 				return nil
 			}
 		}
-		_ = godirwalk.Walk(root, &opts)
-
-		// everything is done
-		walkerWg.Done()
+		err = godirwalk.Walk(root, options)
+		if err == nil {
+			close(files)
+		}
 	}()
 
-	// wait for all walker calls
-	walkerWg.Wait()
-
-	if walkErr == nil {
-		filesWg.Wait()
-		close(kill)
+	var wg sync.WaitGroup
+	wg.Add(limit)
+	for i := 0; i < limit; i++ {
+		go func() {
+			for file := range files {
+				if e := callback(file.path, file.info); e != nil {
+					select {
+					case errCh <- e: // sent ok
+					default: // buffer full
+					}
+				}
+			}
+			wg.Done()
+		}()
 	}
 
-	return walkErr
+	wg.Wait()
+
+	return err
 }
 
 // walkArgs holds the arguments that were passed to the Walk or WalkLimit
