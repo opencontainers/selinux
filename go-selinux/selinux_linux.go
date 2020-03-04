@@ -249,10 +249,10 @@ func isProcHandle(fh *os.File) error {
 	var buf unix.Statfs_t
 	err := unix.Fstatfs(int(fh.Fd()), &buf)
 	if err != nil {
-		return fmt.Errorf("statfs(%q) failed: %v", fh.Name(), err)
+		return errors.Wrapf(err, "statfs(%q) failed", fh.Name())
 	}
 	if buf.Type != unix.PROC_SUPER_MAGIC {
-		return fmt.Errorf("file %q is not on procfs", fh.Name())
+		return errors.Errorf("file %q is not on procfs", fh.Name())
 	}
 
 	return nil
@@ -799,7 +799,7 @@ func badPrefix(fpath string) error {
 	badPrefixes := []string{"/usr"}
 	for _, prefix := range badPrefixes {
 		if strings.HasPrefix(fpath, prefix) {
-			return fmt.Errorf("relabeling content in %s is not allowed", prefix)
+			return errors.Errorf("relabeling content in %s is not allowed", prefix)
 		}
 	}
 	return nil
