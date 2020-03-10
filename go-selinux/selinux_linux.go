@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/opencontainers/selinux/pkg/pwalk"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )
@@ -823,7 +824,7 @@ func Chcon(fpath string, label string, recurse bool) error {
 		return SetFileLabel(fpath, label)
 	}
 
-	return filepath.Walk(fpath, func(p string, info os.FileInfo, err error) error {
+	return pwalk.Walk(fpath, func(p string, info os.FileInfo, err error) error {
 		e := SetFileLabel(p, label)
 		// Walk a file tree can race with removal, so ignore ENOENT
 		if os.IsNotExist(errors.Cause(e)) {
