@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -248,4 +249,21 @@ func TestComputeCreateContext(t *testing.T) {
 		t.Errorf("ComputeCreateContext(%s, %s, %s) succeeded, expected failure", badcon, tmp, process)
 	}
 
+}
+
+func BenchmarkChcon(b *testing.B) {
+	file, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		b.Fatalf("filepath.Abs: %v", err)
+	}
+	dir := filepath.Dir(file)
+	con, err := FileLabel(file)
+	if err != nil {
+		b.Fatalf("FileLabel(%q): %v", file, err)
+	}
+	b.Logf("Chcon(%q, %q)", dir, con)
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		Chcon(dir, con, true)
+	}
 }
