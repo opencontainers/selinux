@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/opencontainers/selinux/pkg/pwalk"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )
@@ -805,8 +806,8 @@ func badPrefix(fpath string) error {
 	return nil
 }
 
-// Chcon changes the `fpath` file object to the SELinux label `label`.
-// If `fpath` is a directory and `recurse`` is true, Chcon will walk the
+// Chcon changes the fpath file object to the SELinux label label.
+// If fpath is a directory and recurse is true, Chcon will walk the
 // directory tree setting the label.
 func Chcon(fpath string, label string, recurse bool) error {
 	if fpath == "" {
@@ -818,19 +819,19 @@ func Chcon(fpath string, label string, recurse bool) error {
 	if err := badPrefix(fpath); err != nil {
 		return err
 	}
-	callback := func(p string, info os.FileInfo, err error) error {
+
+	if !recurse {
+		return SetFileLabel(fpath, label)
+	}
+
+	return pwalk.Walk(fpath, func(p string, info os.FileInfo, err error) error {
 		e := SetFileLabel(p, label)
+		// Walk a file tree can race with removal, so ignore ENOENT
 		if os.IsNotExist(errors.Cause(e)) {
 			return nil
 		}
 		return e
-	}
-
-	if recurse {
-		return filepath.Walk(fpath, callback)
-	}
-
-	return SetFileLabel(fpath, label)
+	})
 }
 
 // DupSecOpt takes an SELinux process label and returns security options that
