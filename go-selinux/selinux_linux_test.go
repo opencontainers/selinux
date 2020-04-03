@@ -59,6 +59,26 @@ func TestKVMLabels(t *testing.T) {
 	ReleaseLabel(plabel)
 }
 
+func TestInitLabels(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	plabel, flabel := InitContainerLabels()
+	if plabel == "" {
+		t.Log("Failed to read init label")
+	}
+	t.Log(plabel)
+	t.Log(flabel)
+	if _, err := CanonicalizeContext(plabel); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CanonicalizeContext(flabel); err != nil {
+		t.Fatal(err)
+	}
+	ReleaseLabel(plabel)
+}
+
 func TestSELinux(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
