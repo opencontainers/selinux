@@ -751,6 +751,19 @@ func KVMContainerLabels() (string, string) {
 }
 
 /*
+InitContainerLabels returns the default processLabel and file labels to be
+used for containers running an init system like systemd by the calling process.
+*/
+func InitContainerLabels() (string, string) {
+	processLabel := labels["init_process"]
+	if processLabel == "" {
+		processLabel = labels["process"]
+	}
+
+	return addMcs(processLabel, labels["file"])
+}
+
+/*
 ContainerLabels returns an allocated processLabel and fileLabel to be used for
 container labeling by the calling process.
 */
