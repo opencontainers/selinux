@@ -8,6 +8,10 @@ define go-build
 	GOOS=$(1) GOARCH=$(2) $(GO) build -tags $(BUILDTAGS) ./...
 endef
 
+define go-build-noselinux
+	GOOS=$(1) GOARCH=$(2) $(GO) build ./...
+endef
+
 .PHONY:
 build:
 	$(call go-build,linux,amd64)
@@ -21,6 +25,13 @@ build-cross:
 	$(call go-build,linux,s390x)
 	$(call go-build,windows,amd64)
 	$(call go-build,windows,386)
+	$(call go-build-noselinux,linux,amd64)
+	$(call go-build-noselinux,linux,arm)
+	$(call go-build-noselinux,linux,arm64)
+	$(call go-build-noselinux,linux,ppc64le)
+	$(call go-build-noselinux,linux,s390x)
+	$(call go-build-noselinux,windows,amd64)
+	$(call go-build-noselinux,windows,386)
 
 BUILD_PATH := $(shell pwd)/build
 BUILD_BIN_PATH := ${BUILD_PATH}/bin
@@ -32,7 +43,13 @@ ifndef GOPATH
 endif
 
 .PHONY: test
+noselinux:=$(shell mktemp /tmp/noselinux_XXXX)
+selinux:=$(shell mktemp /tmp/selinux_XXXX)
 test: check-gopath
+	grep '^func [A-Z].*' go-selinux/selinux_stub.go > ${noselinux}
+	grep '^func [A-Z].*' go-selinux/selinux_linux.go > ${selinux}
+	diff ${noselinux} ${selinux}
+	rm -f ${noselinux} ${selinux}
 	go test -timeout 3m -tags "${BUILDTAGS}" ${TESTFLAGS} -v ./...
 	go test -timeout 3m ${TESTFLAGS} -v ./...
 
