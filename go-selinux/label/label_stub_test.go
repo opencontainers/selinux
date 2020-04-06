@@ -79,7 +79,7 @@ func TestProcessLabel(t *testing.T) {
 	}
 }
 
-func CheckLabelCompile(t *testing.T) {
+func TestCheckLabelCompile(t *testing.T) {
 	if _, _, err := GenLabels(""); err != nil {
 		t.Fatal(err)
 	}
