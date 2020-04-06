@@ -83,13 +83,6 @@ func CheckLabelCompile(t *testing.T) {
 	if _, _, err := GenLabels(""); err != nil {
 		t.Fatal(err)
 	}
-	if test := FormatMountLabel("", ""); test != "" {
-		t.Fatal("Format failed")
-	}
-
-	if test := FormatMountLabel("", ""); test != "" {
-		t.Fatal("Format failed")
-	}
 
 	if _, err := FileLabel("/etc"); err != nil {
 		t.Fatal(err)

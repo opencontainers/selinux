@@ -3,7 +3,6 @@
 package label
 
 import (
-	"fmt"
 	"os"
 	"os/user"
 	"strings"
@@ -80,24 +79,6 @@ func InitLabels(options []string) (plabel string, mlabel string, Err error) {
 // to the official API. Use InitLabels(strings.Fields(options)) instead.
 func GenLabels(options string) (string, string, error) {
 	return InitLabels(strings.Fields(options))
-}
-
-// FormatMountLabel returns a string to be used by the mount command.
-// The format of this string will be used to alter the labeling of the mountpoint.
-// The string returned is suitable to be used as the options field of the mount command.
-// If you need to have additional mount point options, you can pass them in as
-// the first parameter.  Second parameter is the label that you wish to apply
-// to all content in the mount point.
-func FormatMountLabel(src, mountLabel string) string {
-	if mountLabel != "" {
-		switch src {
-		case "":
-			src = fmt.Sprintf("context=%q", mountLabel)
-		default:
-			src = fmt.Sprintf("%s,context=%q", src, mountLabel)
-		}
-	}
-	return src
 }
 
 // SetFileLabel modifies the "path" label to the specified file label
