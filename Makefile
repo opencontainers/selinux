@@ -43,13 +43,8 @@ ifndef GOPATH
 endif
 
 .PHONY: test
-noselinux:=$(shell mktemp /tmp/noselinux_XXXX)
-selinux:=$(shell mktemp /tmp/selinux_XXXX)
 test: check-gopath
-	grep '^func [A-Z].*' go-selinux/selinux_stub.go > ${noselinux}
-	grep '^func [A-Z].*' go-selinux/selinux_linux.go > ${selinux}
-	diff ${noselinux} ${selinux}
-	rm -f ${noselinux} ${selinux}
+	bash -c "diff  <(grep '^func [A-Z]' go-selinux/selinux_stub.go) <(grep '^func [A-Z]' go-selinux/selinux_linux.go)"
 	go test -timeout 3m -tags "${BUILDTAGS}" ${TESTFLAGS} -v ./...
 	go test -timeout 3m ${TESTFLAGS} -v ./...
 
