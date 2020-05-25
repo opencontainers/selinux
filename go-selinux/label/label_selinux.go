@@ -42,7 +42,7 @@ func InitLabels(options []string) (plabel string, mlabel string, Err error) {
 		if err != nil {
 			return "", "", err
 		}
-
+		mcsLevel := pcon["level"]
 		mcon, err := selinux.NewContext(mountLabel)
 		if err != nil {
 			return "", "", err
@@ -61,16 +61,21 @@ func InitLabels(options []string) (plabel string, mlabel string, Err error) {
 			}
 			if con[0] == "filetype" {
 				mcon["type"] = con[1]
+				continue
 			}
 			pcon[con[0]] = con[1]
 			if con[0] == "level" || con[0] == "user" {
 				mcon[con[0]] = con[1]
 			}
 		}
-		selinux.ReleaseLabel(processLabel)
-		processLabel = pcon.Get()
-		mountLabel = mcon.Get()
-		selinux.ReserveLabel(processLabel)
+		if pcon.Get() != processLabel {
+			if pcon["level"] != mcsLevel {
+				selinux.ReleaseLabel(processLabel)
+			}
+			processLabel = pcon.Get()
+			mountLabel = mcon.Get()
+			selinux.ReserveLabel(processLabel)
+		}
 	}
 	return processLabel, mountLabel, nil
 }

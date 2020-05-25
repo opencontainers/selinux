@@ -48,7 +48,7 @@ var PidLabel = selinux.PidLabel
 
 // Init initialises the labeling system
 func Init() {
-	selinux.GetEnabled()
+	_ = selinux.GetEnabled()
 }
 
 // ClearLabels will clear all reserved labels
