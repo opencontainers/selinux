@@ -103,6 +103,14 @@ func ComputeCreateContext(source string, target string, class string) (string, e
 	return "", nil
 }
 
+// CalculateGlbLub computes the glb (greatest lower bound) and lub (least upper bound)
+// of a source and target range.
+// The glblub is calculated as the greater of the low sensitivities and
+// the lower of the high sensitivities and the and of each category bitmap.
+func CalculateGlbLub(sourceRange, targetRange string) (string, error) {
+	return "", nil
+}
+
 /*
 SetExecLabel sets the SELinux label that the kernel will use for any programs
 that are executed by the current process thread, or an error.
