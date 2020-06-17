@@ -100,7 +100,7 @@ func (s *selinuxState) getEnabled() bool {
 	return s.setEnable(enabled)
 }
 
-// setDisabled disables selinux support for the package
+// setDisabled disables SELinux support for the package
 func setDisabled() {
 	state.setEnable(false)
 }
@@ -193,14 +193,14 @@ func (s *selinuxState) getSELinuxfs() string {
 
 // getSelinuxMountPoint returns the path to the mountpoint of an selinuxfs
 // filesystem or an empty string if no mountpoint is found.  Selinuxfs is
-// a proc-like pseudo-filesystem that exposes the selinux policy API to
+// a proc-like pseudo-filesystem that exposes the SELinux policy API to
 // processes.  The existence of an selinuxfs mount is used to determine
-// whether selinux is currently enabled or not.
+// whether SELinux is currently enabled or not.
 func getSelinuxMountPoint() string {
 	return state.getSELinuxfs()
 }
 
-// getEnabled returns whether selinux is currently enabled.
+// getEnabled returns whether SELinux is currently enabled.
 func getEnabled() bool {
 	return state.getEnabled()
 }
@@ -285,7 +285,8 @@ func readCon(fpath string) (string, error) {
 	return strings.Trim(retval, "\x00"), nil
 }
 
-// classIndex returns the int index for an object class in the loaded policy, or -1 and an error
+// classIndex returns the int index for an object class in the loaded policy,
+// or -1 and an error
 func classIndex(class string) (int, error) {
 	permpath := fmt.Sprintf("class/%s/index", class)
 	indexpath := filepath.Join(getSelinuxMountPoint(), permpath)
@@ -330,18 +331,14 @@ func fileLabel(fpath string) (string, error) {
 	return string(label), nil
 }
 
-/*
-setFSCreateLabel tells kernel the label to create all file system objects
-created by this task. Setting label="" to return to default.
-*/
+// setFSCreateLabel tells kernel the label to create all file system objects
+// created by this task. Setting label="" to return to default.
 func setFSCreateLabel(label string) error {
 	return writeAttr("fscreate", label)
 }
 
-/*
-fsCreateLabel returns the default label the kernel which the kernel is using
-for file system objects created by this task. "" indicates default.
-*/
+// fsCreateLabel returns the default label the kernel which the kernel is using
+// for file system objects created by this task. "" indicates default.
 func fsCreateLabel() (string, error) {
 	return readAttr("fscreate")
 }
@@ -356,10 +353,8 @@ func pidLabel(pid int) (string, error) {
 	return readCon(fmt.Sprintf("/proc/%d/attr/current", pid))
 }
 
-/*
-ExecLabel returns the SELinux label that the kernel will use for any programs
-that are executed by the current process thread, or an error.
-*/
+// ExecLabel returns the SELinux label that the kernel will use for any programs
+// that are executed by the current process thread, or an error.
 func execLabel() (string, error) {
 	return readAttr("exec")
 }
@@ -421,18 +416,15 @@ func writeAttr(attr, val string) error {
 	return writeCon(attrPath(attr), val)
 }
 
-/*
-canonicalizeContext takes a context string and writes it to the kernel
-the function then returns the context that the kernel will use.  This function
-can be used to see if two contexts are equivalent
-*/
+// canonicalizeContext takes a context string and writes it to the kernel
+// the function then returns the context that the kernel will use. Use this
+// function to check if two contexts are equivalent
 func canonicalizeContext(val string) (string, error) {
 	return readWriteCon(filepath.Join(getSelinuxMountPoint(), "context"), val)
 }
 
-/*
-computeCreateContext requests the type transition from source to target for class  from the kernel.
-*/
+// computeCreateContext requests the type transition from source to target for
+// class from the kernel.
 func computeCreateContext(source string, target string, class string) (string, error) {
 	classidx, err := classIndex(class)
 	if err != nil {
@@ -675,18 +667,14 @@ func readWriteCon(fpath string, val string) (string, error) {
 	return strings.Trim(retval, "\x00"), nil
 }
 
-/*
-setExecLabel sets the SELinux label that the kernel will use for any programs
-that are executed by the current process thread, or an error.
-*/
+// setExecLabel sets the SELinux label that the kernel will use for any programs
+// that are executed by the current process thread, or an error.
 func setExecLabel(label string) error {
 	return writeAttr("exec", label)
 }
 
-/*
-setTaskLabel sets the SELinux label for the current thread, or an error.
-This requires the dyntransition permission.
-*/
+// setTaskLabel sets the SELinux label for the current thread, or an error.
+// This requires the dyntransition permission.
 func setTaskLabel(label string) error {
 	return writeAttr("current", label)
 }
@@ -788,19 +776,15 @@ func enforceMode() int {
 	return enforce
 }
 
-/*
-setEnforceMode sets the current SELinux mode Enforcing, Permissive.
-Disabled is not valid, since this needs to be set at boot time.
-*/
+// setEnforceMode sets the current SELinux mode Enforcing, Permissive.
+// Disabled is not valid, since this needs to be set at boot time.
 func setEnforceMode(mode int) error {
 	return ioutil.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0644)
 }
 
-/*
-defaultEnforceMode returns the systems default SELinux mode Enforcing,
-Permissive or Disabled. Note this is is just the default at boot time.
-EnforceMode tells you the systems current mode.
-*/
+// defaultEnforceMode returns the systems default SELinux mode Enforcing,
+// Permissive or Disabled. Note this is is just the default at boot time.
+// EnforceMode tells you the systems current mode.
 func defaultEnforceMode() int {
 	switch readConfig(selinuxTag) {
 	case "enforcing":
@@ -881,10 +865,8 @@ func uniqMcs(catRange uint32) string {
 	return mcs
 }
 
-/*
-releaseLabel will unreserve the MLS/MCS Level field of the specified label.
-Allowing it to be used by another process.
-*/
+// releaseLabel un-reserves the MLS/MCS Level field of the specified label,
+// allowing it to be used by another process.
 func releaseLabel(label string) {
 	if len(label) != 0 {
 		con := strings.SplitN(label, ":", 4)
@@ -951,10 +933,8 @@ func loadLabels() map[string]string {
 	return labels
 }
 
-/*
-kvmContainerLabels returns the default processLabel and mountLabel to be used
-for kvm containers by the calling process.
-*/
+// kvmContainerLabels returns the default processLabel and mountLabel to be used
+// for kvm containers by the calling process.
 func kvmContainerLabels() (string, string) {
 	processLabel := labels["kvm_process"]
 	if processLabel == "" {
@@ -964,10 +944,8 @@ func kvmContainerLabels() (string, string) {
 	return addMcs(processLabel, labels["file"])
 }
 
-/*
-initContainerLabels returns the default processLabel and file labels to be
-used for containers running an init system like systemd by the calling process.
-*/
+// initContainerLabels returns the default processLabel and file labels to be
+// used for containers running an init system like systemd by the calling process.
 func initContainerLabels() (string, string) {
 	processLabel := labels["init_process"]
 	if processLabel == "" {
@@ -977,10 +955,8 @@ func initContainerLabels() (string, string) {
 	return addMcs(processLabel, labels["file"])
 }
 
-/*
-containerLabels returns an allocated processLabel and fileLabel to be used for
-container labeling by the calling process.
-*/
+// containerLabels returns an allocated processLabel and fileLabel to be used for
+// container labeling by the calling process.
 func containerLabels() (processLabel string, fileLabel string) {
 	if !getEnabled() {
 		return "", ""
@@ -1019,10 +995,8 @@ func securityCheckContext(val string) error {
 	return ioutil.WriteFile(path.Join(getSelinuxMountPoint(), "context"), []byte(val), 0644)
 }
 
-/*
-copyLevel returns a label with the MLS/MCS level from src label replaced on
-the dest label.
-*/
+// copyLevel returns a label with the MLS/MCS level from src label replaced on
+// the dest label.
 func copyLevel(src, dest string) (string, error) {
 	if src == "" {
 		return "", nil
@@ -1047,7 +1021,7 @@ func copyLevel(src, dest string) (string, error) {
 	return tcon.Get(), nil
 }
 
-// Prevent users from relabing system files
+// Prevent users from relabeling system files
 func badPrefix(fpath string) error {
 	if fpath == "" {
 		return ErrEmptyPath
@@ -1063,7 +1037,7 @@ func badPrefix(fpath string) error {
 }
 
 // chcon changes the fpath file object to the SELinux label label.
-// If fpath is a directory and recurse is true, Chcon will walk the
+// If fpath is a directory and recurse is true, then chcon walks the
 // directory tree setting the label.
 func chcon(fpath string, label string, recurse bool) error {
 	if fpath == "" {
