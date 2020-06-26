@@ -31,7 +31,6 @@ type Context map[string]string
 
 // SetDisabled disables selinux support for the package
 func SetDisabled() {
-	return
 }
 
 // GetEnabled returns whether selinux is currently enabled.
@@ -162,12 +161,10 @@ func NewContext(label string) (Context, error) {
 
 // ClearLabels clears all reserved MLS/MCS levels
 func ClearLabels() {
-	return
 }
 
 // ReserveLabel reserves the MLS/MCS level component of the specified label
 func ReserveLabel(label string) {
-	return
 }
 
 // EnforceMode returns the current SELinux mode Enforcing, Permissive, Disabled
@@ -197,7 +194,6 @@ ReleaseLabel will unreserve the MLS/MCS Level field of the specified label.
 Allowing it to be used by another process.
 */
 func ReleaseLabel(label string) {
-	return
 }
 
 // ROFileLabel returns the specified SELinux readonly file label
