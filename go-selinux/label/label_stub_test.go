@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+const testLabel = "system_u:object_r:container_file_t:s0:c1,c2"
+
 func TestInit(t *testing.T) {
 	var testNull []string
 	_, _, err := InitLabels(testNull)
@@ -43,14 +45,14 @@ func TestRelabel(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(testdir)
-	label := "system_u:object_r:container_file_t:s0:c1,c2"
+	label := testLabel
 	if err := Relabel("/etc", label, false); err != nil {
 		t.Fatalf("Relabel /etc succeeded")
 	}
 }
 
 func TestSocketLabel(t *testing.T) {
-	label := "system_u:object_r:container_t:s0:c1,c2"
+	label := testLabel
 	if err := SetSocketLabel(label); err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +62,7 @@ func TestSocketLabel(t *testing.T) {
 }
 
 func TestKeyLabel(t *testing.T) {
-	label := "system_u:object_r:container_t:s0:c1,c2"
+	label := testLabel
 	if err := SetKeyLabel(label); err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +72,7 @@ func TestKeyLabel(t *testing.T) {
 }
 
 func TestProcessLabel(t *testing.T) {
-	label := "system_u:object_r:container_t:s0:c1,c2"
+	label := testLabel
 	if err := SetProcessLabel(label); err != nil {
 		t.Fatal(err)
 	}
