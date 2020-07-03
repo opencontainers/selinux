@@ -7,7 +7,10 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func TestSetFileLabel(t *testing.T) {
@@ -291,6 +294,122 @@ func TestComputeCreateContext(t *testing.T) {
 		t.Errorf("ComputeCreateContext(%s, %s, %s) succeeded, expected failure", badcon, tmp, process)
 	}
 
+}
+
+func TestGlbLub(t *testing.T) {
+	tests := []struct {
+		sourceRange   string
+		targetRange   string
+		expectedRange string
+		expectedErr   error
+	}{
+		{
+			sourceRange:   "s0:c0.c100-s10:c0.c150",
+			targetRange:   "s5:c50.c100-s15:c0.c149",
+			expectedRange: "s5:c50.c100-s10:c0.c149",
+		},
+		{
+			sourceRange:   "s5:c50.c100-s15:c0.c149",
+			targetRange:   "s0:c0.c100-s10:c0.c150",
+			expectedRange: "s5:c50.c100-s10:c0.c149",
+		},
+		{
+			sourceRange:   "s0:c0.c100-s10:c0.c150",
+			targetRange:   "s0",
+			expectedRange: "s0",
+		},
+		{
+			sourceRange:   "s6:c0.c1023",
+			targetRange:   "s6:c0,c2,c11,c201.c429,c431.c511",
+			expectedRange: "s6:c0,c2,c11,c201.c429,c431.c511",
+		},
+		{
+			sourceRange:   "s0-s15:c0.c1023",
+			targetRange:   "s6:c0,c2,c11,c201.c429,c431.c511",
+			expectedRange: "s6-s6:c0,c2,c11,c201.c429,c431.c511",
+		},
+		{
+			sourceRange:   "s0:c0.c100,c125,c140,c150-s10",
+			targetRange:   "s4:c0.c50,c140",
+			expectedRange: "s4:c0.c50,c140-s4",
+		},
+		{
+			sourceRange:   "s5:c512.c550,c552.c1023-s5:c0.c550,c552.c1023",
+			targetRange:   "s5:c512.c550,c553.c1023-s5:c0,c1,c4,c5,c6,c512.c550,c553.c1023",
+			expectedRange: "s5:c512.c550,c553.c1023-s5:c0,c1,c4.c6,c512.c550,c553.c1023",
+		},
+		{
+			sourceRange:   "s5:c512.c540,c542,c543,c552.c1023-s5:c0.c550,c552.c1023",
+			targetRange:   "s5:c512.c550,c553.c1023-s5:c0,c1,c4,c5,c6,c512.c550,c553.c1023",
+			expectedRange: "s5:c512.c540,c542,c543,c553.c1023-s5:c0,c1,c4.c6,c512.c550,c553.c1023",
+		},
+		{
+			sourceRange:   "s5:c50.c100-s15:c0.c149",
+			targetRange:   "s5:c512.c550,c552.c1023-s5:c0.c550,c552.c1023",
+			expectedRange: "s5-s5:c0.c149",
+		},
+		{
+			sourceRange:   "s5-s15",
+			targetRange:   "s6-s7",
+			expectedRange: "s6-s7",
+		},
+		{
+			sourceRange: "s5:c50.c100-s15:c0.c149",
+			targetRange: "s4-s4:c0.c1023",
+			expectedErr: ErrIncomparable,
+		},
+		{
+			sourceRange: "s4-s4:c0.c1023",
+			targetRange: "s5:c50.c100-s15:c0.c149",
+			expectedErr: ErrIncomparable,
+		},
+		{
+			sourceRange: "s4-s4:c0.c1023.c10000",
+			targetRange: "s5:c50.c100-s15:c0.c149",
+			expectedErr: strconv.ErrSyntax,
+		},
+		{
+			sourceRange: "s4-s4:c0.c1023.c10000-s4",
+			targetRange: "s5:c50.c100-s15:c0.c149-s5",
+			expectedErr: strconv.ErrSyntax,
+		},
+		{
+			sourceRange: "4-4",
+			targetRange: "s5:c50.c100-s15:c0.c149",
+			expectedErr: ErrLevelSyntax,
+		},
+		{
+			sourceRange: "t4-t4",
+			targetRange: "s5:c50.c100-s15:c0.c149",
+			expectedErr: ErrLevelSyntax,
+		},
+		{
+			sourceRange: "s5:x50.x100-s15:c0.c149",
+			targetRange: "s5:c50.c100-s15:c0.c149",
+			expectedErr: ErrLevelSyntax,
+		},
+	}
+
+	for _, tt := range tests {
+		got, err := CalculateGlbLub(tt.sourceRange, tt.targetRange)
+		if err != tt.expectedErr {
+			switch e := errors.Cause(err).(type) {
+			case *strconv.NumError:
+				if e.Unwrap() == tt.expectedErr {
+					continue
+				}
+			default:
+				if e == tt.expectedErr {
+					continue
+				}
+			}
+			t.Fatalf("want %q got %q: src: %q tgt: %q", tt.expectedErr, err, tt.sourceRange, tt.targetRange)
+		}
+
+		if got != tt.expectedRange {
+			t.Errorf("want %q got %q", tt.expectedRange, got)
+		}
+	}
 }
 
 func BenchmarkChcon(b *testing.B) {

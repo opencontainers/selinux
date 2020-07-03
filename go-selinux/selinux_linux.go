@@ -20,6 +20,7 @@ import (
 
 	"github.com/opencontainers/selinux/pkg/pwalk"
 	"github.com/pkg/errors"
+	"github.com/willf/bitset"
 	"golang.org/x/sys/unix"
 )
 
@@ -33,6 +34,8 @@ const (
 
 	// DefaultCategoryRange is the upper bound on the category range
 	DefaultCategoryRange = uint32(1024)
+
+	minSensLen = 2
 
 	contextFile      = "/usr/share/containers/selinux/contexts"
 	selinuxDir       = "/etc/selinux/"
@@ -52,6 +55,23 @@ type selinuxState struct {
 	sync.Mutex
 }
 
+type level struct {
+	sens uint
+	cats *bitset.BitSet
+}
+
+type mlsRange struct {
+	low  *level
+	high *level
+}
+
+type levelItem byte
+
+const (
+	sensitivity levelItem = 's'
+	category    levelItem = 'c'
+)
+
 var (
 	// ErrMCSAlreadyExists is returned when trying to allocate a duplicate MCS.
 	ErrMCSAlreadyExists = errors.New("MCS label already exists")
@@ -59,6 +79,10 @@ var (
 	ErrEmptyPath = errors.New("empty path")
 	// InvalidLabel is returned when an invalid label is specified.
 	InvalidLabel = errors.New("Invalid Label")
+	// ErrIncomparable is returned two levels are not comparable
+	ErrIncomparable = errors.New("incomparable levels")
+	// ErrLevelSyntax is returned when a sensitivity or category do not have correct syntax in a level
+	ErrLevelSyntax = errors.New("invalid level syntax")
 
 	// CategoryRange allows the upper bound on the category range to be adjusted
 	CategoryRange = DefaultCategoryRange
@@ -443,6 +467,217 @@ func ComputeCreateContext(source string, target string, class string) (string, e
 	}
 
 	return readWriteCon(filepath.Join(getSelinuxMountPoint(), "create"), fmt.Sprintf("%s %s %d", source, target, classidx))
+}
+
+// catsToBitset stores categories in a bitset.
+func catsToBitset(cats string) (*bitset.BitSet, error) {
+	bitset := &bitset.BitSet{}
+
+	catlist := strings.Split(cats, ",")
+	for _, r := range catlist {
+		ranges := strings.SplitN(r, ".", 2)
+		if len(ranges) > 1 {
+			catstart, err := parseLevelItem(ranges[0], category)
+			if err != nil {
+				return nil, err
+			}
+			catend, err := parseLevelItem(ranges[1], category)
+			if err != nil {
+				return nil, err
+			}
+			for i := catstart; i <= catend; i++ {
+				bitset.Set(i)
+			}
+		} else {
+			cat, err := parseLevelItem(ranges[0], category)
+			if err != nil {
+				return nil, err
+			}
+			bitset.Set(cat)
+		}
+	}
+
+	return bitset, nil
+}
+
+// parseLevelItem parses and verifies that a sensitivity or category are valid
+func parseLevelItem(s string, sep levelItem) (uint, error) {
+	if len(s) < minSensLen || levelItem(s[0]) != sep {
+		return 0, ErrLevelSyntax
+	}
+	val, err := strconv.ParseUint(s[1:], 10, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint(val), nil
+}
+
+// parseLevel fills a level from a string that contains
+// a sensitivity and categories
+func (l *level) parseLevel(levelStr string) error {
+	lvl := strings.SplitN(levelStr, ":", 2)
+	sens, err := parseLevelItem(lvl[0], sensitivity)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse sensitivity")
+	}
+	l.sens = sens
+	if len(lvl) > 1 {
+		cats, err := catsToBitset(lvl[1])
+		if err != nil {
+			return errors.Wrap(err, "failed to parse categories")
+		}
+		l.cats = cats
+	}
+
+	return nil
+}
+
+// rangeStrToMLSRange marshals a string representation of a range.
+func rangeStrToMLSRange(rangeStr string) (*mlsRange, error) {
+	mlsRange := &mlsRange{}
+	levelSlice := strings.SplitN(rangeStr, "-", 2)
+
+	switch len(levelSlice) {
+	// rangeStr that has a low and a high level, e.g. s4:c0.c1023-s6:c0.c1023
+	case 2:
+		mlsRange.high = &level{}
+		if err := mlsRange.high.parseLevel(levelSlice[1]); err != nil {
+			return nil, errors.Wrapf(err, "failed to parse high level %q", levelSlice[1])
+		}
+		fallthrough
+	// rangeStr that is single level, e.g. s6:c0,c3,c5,c30.c1023
+	case 1:
+		mlsRange.low = &level{}
+		if err := mlsRange.low.parseLevel(levelSlice[0]); err != nil {
+			return nil, errors.Wrapf(err, "failed to parse low level %q", levelSlice[0])
+		}
+	}
+
+	if mlsRange.high == nil {
+		mlsRange.high = mlsRange.low
+	}
+
+	return mlsRange, nil
+}
+
+// bitsetToStr takes a category bitset and returns it in the
+// canonical selinux syntax
+func bitsetToStr(c *bitset.BitSet) string {
+	var str string
+	i, e := c.NextSet(0)
+	len := 0
+	for e {
+		if len == 0 {
+			if str != "" {
+				str += ","
+			}
+			str += "c" + strconv.Itoa(int(i))
+		}
+
+		next, e := c.NextSet(i + 1)
+		if e {
+			// consecutive cats
+			if next == i+1 {
+				len++
+				i = next
+				continue
+			}
+		}
+		if len == 1 {
+			str += ",c" + strconv.Itoa(int(i))
+		} else if len > 1 {
+			str += ".c" + strconv.Itoa(int(i))
+		}
+		if !e {
+			break
+		}
+		len = 0
+		i = next
+	}
+
+	return str
+}
+
+func (l1 *level) equal(l2 *level) bool {
+	if l2 == nil || l1 == nil {
+		return l1 == l2
+	}
+	if l1.sens != l2.sens {
+		return false
+	}
+	return l1.cats.Equal(l2.cats)
+}
+
+// String returns an mlsRange as a string.
+func (m mlsRange) String() string {
+	low := "s" + strconv.Itoa(int(m.low.sens))
+	if m.low.cats != nil && m.low.cats.Count() > 0 {
+		low += ":" + bitsetToStr(m.low.cats)
+	}
+
+	if m.low.equal(m.high) {
+		return low
+	}
+
+	high := "s" + strconv.Itoa(int(m.high.sens))
+	if m.high.cats != nil && m.high.cats.Count() > 0 {
+		high += ":" + bitsetToStr(m.high.cats)
+	}
+
+	return low + "-" + high
+}
+
+func max(a, b uint) uint {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b uint) uint {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// CalculateGlbLub computes the glb (greatest lower bound) and lub (least upper bound)
+// of a source and target range.
+// The glblub is calculated as the greater of the low sensitivities and
+// the lower of the high sensitivities and the and of each category bitset.
+func CalculateGlbLub(sourceRange, targetRange string) (string, error) {
+	s, err := rangeStrToMLSRange(sourceRange)
+	if err != nil {
+		return "", err
+	}
+	t, err := rangeStrToMLSRange(targetRange)
+	if err != nil {
+		return "", err
+	}
+
+	if s.high.sens < t.low.sens || t.high.sens < s.low.sens {
+		/* these ranges have no common sensitivities */
+		return "", ErrIncomparable
+	}
+
+	outrange := &mlsRange{low: &level{}, high: &level{}}
+
+	/* take the greatest of the low */
+	outrange.low.sens = max(s.low.sens, t.low.sens)
+
+	/* take the least of the high */
+	outrange.high.sens = min(s.high.sens, t.high.sens)
+
+	/* find the intersecting categories */
+	if s.low.cats != nil && t.low.cats != nil {
+		outrange.low.cats = s.low.cats.Intersection(t.low.cats)
+	}
+	if s.high.cats != nil && t.high.cats != nil {
+		outrange.high.cats = s.high.cats.Intersection(t.high.cats)
+	}
+
+	return outrange.String(), nil
 }
 
 func readWriteCon(fpath string, val string) (string, error) {
