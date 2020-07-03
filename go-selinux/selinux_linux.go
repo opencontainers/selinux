@@ -25,8 +25,7 @@ import (
 )
 
 const (
-	minSensLen = 2
-
+	minSensLen       = 2
 	contextFile      = "/usr/share/containers/selinux/contexts"
 	selinuxDir       = "/etc/selinux/"
 	selinuxConfig    = selinuxDir + "config"
