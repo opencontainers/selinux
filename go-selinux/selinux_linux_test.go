@@ -395,7 +395,7 @@ func TestGlbLub(t *testing.T) {
 		if err != tt.expectedErr {
 			switch e := errors.Cause(err).(type) {
 			case *strconv.NumError:
-				if e.Unwrap() == tt.expectedErr {
+				if e.Err == tt.expectedErr {
 					continue
 				}
 			default:
