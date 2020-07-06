@@ -44,7 +44,6 @@ endif
 
 .PHONY: test
 test: check-gopath
-	bash -c "diff  <(grep '^func [A-Z]' go-selinux/selinux_stub.go) <(grep '^func [A-Z]' go-selinux/selinux_linux.go)"
 	go test -timeout 3m -tags "${BUILDTAGS}" ${TESTFLAGS} -v ./...
 	go test -timeout 3m ${TESTFLAGS} -v ./...
 
