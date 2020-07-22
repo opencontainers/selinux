@@ -63,8 +63,12 @@ func FileLabel(fpath string) (string, error) {
 	return fileLabel(fpath)
 }
 
-// SetFSCreateLabel tells kernel the label to create all file system objects
-// created by this task. Setting label="" to return to default.
+// SetFSCreateLabel tells the kernel what label to use for all file system objects
+// created by this task.
+// Set the label to an empty string to return to the default label. Calls to SetFSCreateLabel
+// should be wrapped in runtime.LockOSThread()/runtime.UnlockOSThread() until file system
+// objects created by this task are finished to guarantee another goroutine does not migrate
+// to the current thread before execution is complete.
 func SetFSCreateLabel(label string) error {
 	return setFSCreateLabel(label)
 }
@@ -113,19 +117,27 @@ func CalculateGlbLub(sourceRange, targetRange string) (string, error) {
 }
 
 // SetExecLabel sets the SELinux label that the kernel will use for any programs
-// that are executed by the current process thread, or an error.
+// that are executed by the current process thread, or an error. Calls to SetExecLabel
+// should  be wrapped in runtime.LockOSThread()/runtime.UnlockOSThread() until execution
+// of the program is finished to guarantee another goroutine does not migrate to the current
+// thread before execution is complete.
 func SetExecLabel(label string) error {
 	return setExecLabel(label)
 }
 
 // SetTaskLabel sets the SELinux label for the current thread, or an error.
-// This requires the dyntransition permission.
+// This requires the dyntransition permission. Calls to SetTaskLabel should
+// be wrapped in runtime.LockOSThread()/runtime.UnlockOSThread() to guarantee
+// the current thread does not run in a new mislabeled thread.
 func SetTaskLabel(label string) error {
 	return setTaskLabel(label)
 }
 
 // SetSocketLabel takes a process label and tells the kernel to assign the
-// label to the next socket that gets created
+// label to the next socket that gets created. Calls to SetSocketLabel
+// should be wrapped in runtime.LockOSThread()/runtime.UnlockOSThread() until
+// the the socket is created to guarantee another goroutine does not migrate
+// to the current thread before execution is complete.
 func SetSocketLabel(label string) error {
 	return setSocketLabel(label)
 }
@@ -141,7 +153,10 @@ func PeerLabel(fd uintptr) (string, error) {
 }
 
 // SetKeyLabel takes a process label and tells the kernel to assign the
-// label to the next kernel keyring that gets created
+// label to the next kernel keyring that gets created. Calls to SetKeyLabel
+// should be wrapped in runtime.LockOSThread()/runtime.UnlockOSThread() until
+// the kernel keyring is created to guarantee another goroutine does not migrate
+// to the current thread before execution is complete.
 func SetKeyLabel(label string) error {
 	return setKeyLabel(label)
 }
