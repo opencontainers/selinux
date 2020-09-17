@@ -11,11 +11,11 @@ define go-build-noselinux
 	GOOS=$(1) GOARCH=$(2) $(GO) build ./...
 endef
 
-.PHONY:
+.PHONY: build
 build:
 	$(call go-build,linux,amd64)
 
-.PHONY:
+.PHONY: build-cross
 build-cross:
 	$(call go-build,linux,386)
 	$(call go-build,linux,arm)
@@ -36,6 +36,7 @@ BUILD_PATH := $(shell pwd)/build
 BUILD_BIN_PATH := ${BUILD_PATH}/bin
 GOLANGCI_LINT := ${BUILD_BIN_PATH}/golangci-lint
 
+.PHONY: check-gopath
 check-gopath:
 ifndef GOPATH
 	$(error GOPATH is not set)
@@ -53,12 +54,13 @@ ${GOLANGCI_LINT}:
 		BINDIR=${BUILD_BIN_PATH} && \
 	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
 
-.PHONY:
+.PHONY: lint
 lint: ${GOLANGCI_LINT}
 	${GOLANGCI_LINT} version
 	${GOLANGCI_LINT} linters
 	${GOLANGCI_LINT} run
 
+.PHONY: vendor
 vendor:
 	export GO111MODULE=on \
 		$(GO) mod tidy && \
