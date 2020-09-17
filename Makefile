@@ -62,7 +62,6 @@ lint: ${GOLANGCI_LINT}
 
 .PHONY: vendor
 vendor:
-	GO111MODULE=on \
-		$(GO) mod tidy && \
-		$(GO) mod vendor && \
-		$(GO) mod verify
+	$(GO) mod tidy
+	$(GO) mod vendor
+	$(GO) mod verify
