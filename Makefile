@@ -1,4 +1,3 @@
-export GO111MODULE=off
 GO ?= go
 BUILDTAGS := selinux
 
