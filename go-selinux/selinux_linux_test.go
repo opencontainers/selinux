@@ -5,6 +5,7 @@ package selinux
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -410,6 +411,89 @@ func TestGlbLub(t *testing.T) {
 			t.Errorf("want %q got %q", tt.expectedRange, got)
 		}
 	}
+}
+
+func TestContextWithLevel(t *testing.T) {
+	want := "bob:sysadm_r:sysadm_t:SystemLow-SystemHigh"
+
+	goodDefaultBuff := `
+foo_r:foo_t:s0     sysadm_r:sysadm_t:s0
+staff_r:staff_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
+`
+
+	verifier := func(con string) error {
+		if con != want {
+			return fmt.Errorf("invalid context %s", con)
+		}
+
+		return nil
+	}
+
+	tests := []struct {
+		name, userBuff, defaultBuff string
+	}{
+		{
+			name: "match exists in user context file",
+			userBuff: `# COMMENT
+foo_r:foo_t:s0     sysadm_r:sysadm_t:s0
+
+staff_r:staff_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
+`,
+			defaultBuff: goodDefaultBuff,
+		},
+		{
+			name: "match exists in default context file, but not in user file",
+			userBuff: `# COMMENT
+foo_r:foo_t:s0     sysadm_r:sysadm_t:s0
+fake_r:fake_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
+`,
+			defaultBuff: goodDefaultBuff,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := defaultSECtx{
+				user:       "bob",
+				level:      "SystemLow-SystemHigh",
+				scon:       "system_u:staff_r:staff_t:s0",
+				userRdr:    bytes.NewBufferString(tt.userBuff),
+				defaultRdr: bytes.NewBufferString(tt.defaultBuff),
+				verifier:   verifier,
+			}
+
+			got, err := getDefaultContextFromReaders(&c)
+			if err != nil {
+				t.Fatalf("err should not exist but is: %v", err)
+			}
+
+			if got != want {
+				t.Fatalf("got context: %q but expected %q", got, want)
+			}
+		})
+	}
+
+	t.Run("no match in user or default context files", func(t *testing.T) {
+		badUserBuff := ""
+
+		badDefaultBuff := `
+		foo_r:foo_t:s0     sysadm_r:sysadm_t:s0
+		dne_r:dne_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
+		`
+		c := defaultSECtx{
+			user:       "bob",
+			level:      "SystemLow-SystemHigh",
+			scon:       "system_u:staff_r:staff_t:s0",
+			userRdr:    bytes.NewBufferString(badUserBuff),
+			defaultRdr: bytes.NewBufferString(badDefaultBuff),
+			verifier:   verifier,
+		}
+
+		_, err := getDefaultContextFromReaders(&c)
+		if err == nil {
+			t.Fatalf("err was expected")
+		}
+	})
 }
 
 func BenchmarkChcon(b *testing.B) {

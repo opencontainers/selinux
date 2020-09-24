@@ -28,6 +28,8 @@ const (
 	minSensLen       = 2
 	contextFile      = "/usr/share/containers/selinux/contexts"
 	selinuxDir       = "/etc/selinux/"
+	selinuxUsersDir  = "contexts/users"
+	defaultContexts  = "contexts/default_contexts"
 	selinuxConfig    = selinuxDir + "config"
 	selinuxfsMount   = "/sys/fs/selinux"
 	selinuxTypeTag   = "SELINUXTYPE"
@@ -54,6 +56,13 @@ type level struct {
 type mlsRange struct {
 	low  *level
 	high *level
+}
+
+type defaultSECtx struct {
+	user, level, scon   string
+	userRdr, defaultRdr io.Reader
+
+	verifier func(string) error
 }
 
 type levelItem byte
@@ -1067,4 +1076,125 @@ func dupSecOpt(src string) ([]string, error) {
 // labeling support for future container processes.
 func disableSecOpt() []string {
 	return []string{"disable"}
+}
+
+// findUserInContext scans the reader for a valid SELinux context
+// match that is verified with the verifier. Invalid contexts are
+// skipped. It returns a matched context or an empty string if no
+// match is found. If a scanner error occurs, it is returned.
+func findUserInContext(context Context, r io.Reader, verifier func(string) error) (string, error) {
+	fromRole := context["role"]
+	fromType := context["type"]
+	scanner := bufio.NewScanner(r)
+
+	for scanner.Scan() {
+		fromConns := strings.Fields(scanner.Text())
+		if len(fromConns) == 0 {
+			// Skip blank lines
+			continue
+		}
+
+		line := fromConns[0]
+
+		if line[0] == ';' || line[0] == '#' {
+			// Skip comments
+			continue
+		}
+
+		// user context files contexts are formatted as
+		// role_r:type_t:s0 where the user is missing.
+		lineArr := strings.SplitN(line, ":", 4)
+		// skip context with typo, or role and type do not match
+		if len(lineArr) != 3 ||
+			lineArr[0] != fromRole ||
+			lineArr[1] != fromType {
+			continue
+		}
+
+		for _, cc := range fromConns[1:] {
+			toConns := strings.SplitN(cc, ":", 4)
+			if len(toConns) != 3 {
+				continue
+			}
+
+			context["role"] = toConns[0]
+			context["type"] = toConns[1]
+
+			outConn := context.get()
+			if err := verifier(outConn); err != nil {
+				continue
+			}
+
+			return outConn, nil
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", errors.Wrap(err, "failed to scan for context")
+	}
+
+	return "", nil
+}
+
+func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
+	if c.verifier == nil {
+		return "", ErrVerifierNil
+	}
+
+	context, err := newContext(c.scon)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create label for %s", c.scon)
+	}
+
+	// set so the verifier validates the matched context with the provided user and level.
+	context["user"] = c.user
+	context["level"] = c.level
+
+	conn, err := findUserInContext(context, c.userRdr, c.verifier)
+	if err != nil {
+		return "", err
+	}
+
+	if conn != "" {
+		return conn, nil
+	}
+
+	conn, err = findUserInContext(context, c.defaultRdr, c.verifier)
+	if err != nil {
+		return "", err
+	}
+
+	if conn != "" {
+		return conn, nil
+	}
+
+	return "", errors.Wrapf(ErrContextMissing, "context not found: %q", c.scon)
+}
+
+func getDefaultContextWithLevel(user, level, scon string) (string, error) {
+	userPath := filepath.Join(policyRoot, selinuxUsersDir, user)
+	defaultPath := filepath.Join(policyRoot, defaultContexts)
+
+	fu, err := os.Open(userPath)
+	if err != nil {
+		return "", err
+	}
+	defer fu.Close()
+
+	fd, err := os.Open(defaultPath)
+	if err != nil {
+		return "", err
+	}
+	defer fd.Close()
+
+	c := defaultSECtx{
+		user:       user,
+		level:      level,
+		scon:       scon,
+		userRdr:    fu,
+		defaultRdr: fd,
+		verifier:   securityCheckContext,
+	}
+
+	return getDefaultContextFromReaders(&c)
 }

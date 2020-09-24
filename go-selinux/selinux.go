@@ -30,6 +30,11 @@ var (
 	// ErrLevelSyntax is returned when a sensitivity or category do not have correct syntax in a level
 	ErrLevelSyntax = errors.New("invalid level syntax")
 
+	// ErrContextMissing is returned if a requested context is not found in a file.
+	ErrContextMissing = errors.New("context does not have a match")
+	// ErrVerifierNil is returned when a context verifier function is nil.
+	ErrVerifierNil = errors.New("verifier function is nil")
+
 	// CategoryRange allows the upper bound on the category range to be adjusted
 	CategoryRange = DefaultCategoryRange
 )
@@ -261,4 +266,13 @@ func DupSecOpt(src string) ([]string, error) {
 // labeling support for future container processes.
 func DisableSecOpt() []string {
 	return disableSecOpt()
+}
+
+// GetDefaultContextWithLevel gets a single context for the specified SELinux user
+// identity that is reachable from the specified scon context. The context is based
+// on the per-user /etc/selinux/{SELINUXTYPE}/contexts/users/<username> if it exists,
+// and falls back to the global /etc/selinux/{SELINUXTYPE}/contexts/default_contexts
+// file.
+func GetDefaultContextWithLevel(user, level, scon string) (string, error) {
+	return getDefaultContextWithLevel(user, level, scon)
 }
