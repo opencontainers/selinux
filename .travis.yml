@@ -3,7 +3,9 @@ go:
   - 1.14.x
   - 1.15.x
   - tip
-
+arch:
+  - amd64
+  - ppc64le
 before_install:
   - go get -u github.com/vbatts/git-validation
 
