@@ -27,27 +27,6 @@ jobs:
       script: make test BUILDTAGS=""
 
     - stage: validate
-#POWERON SUPPORT 
-    - stage: build
-      script: make
-      arch: ppc64le
-    - stage: lint
-      script: make lint BUILDTAGS=""
-      arch: ppc64le
-    - stage: test
-      script: make test BUILDTAGS=""
-      arch: ppc64le
-      go:  1.14.x
-    - stage: test
-      script: make test BUILDTAGS=""
-      arch: ppc64le
-      go: 1.15.x
-    - stage: test
-      script: make test BUILDTAGS=""
-      arch: ppc64le
-      go : tip
-    - stage: validate
-      arch: ppc64le
-
-      script: |
+    
+script: |
         git-validation -run DCO,short-subject -v -range ${TRAVIS_COMMIT_RANGE}
