@@ -27,6 +27,5 @@ jobs:
       script: make test BUILDTAGS=""
 
     - stage: validate
-    
-script: |
+      script: |
         git-validation -run DCO,short-subject -v -range ${TRAVIS_COMMIT_RANGE}
