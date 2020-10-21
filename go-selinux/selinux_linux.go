@@ -207,28 +207,16 @@ func getEnabled() bool {
 }
 
 func readConfig(target string) string {
-	var (
-		val, key string
-		bufin    *bufio.Reader
-	)
-
 	in, err := os.Open(selinuxConfig)
 	if err != nil {
 		return ""
 	}
 	defer in.Close()
 
-	bufin = bufio.NewReader(in)
+	scanner := bufio.NewScanner(in)
 
-	for done := false; !done; {
-		var line string
-		if line, err = bufin.ReadString('\n'); err != nil {
-			if err != io.EOF {
-				return ""
-			}
-			done = true
-		}
-		line = strings.TrimSpace(line)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 		if len(line) == 0 {
 			// Skip blank lines
 			continue
@@ -238,7 +226,7 @@ func readConfig(target string) string {
 			continue
 		}
 		if groups := assignRegex.FindStringSubmatch(line); groups != nil {
-			key, val = strings.TrimSpace(groups[1]), strings.TrimSpace(groups[2])
+			key, val := strings.TrimSpace(groups[1]), strings.TrimSpace(groups[2])
 			if key == target {
 				return strings.Trim(val, "\"")
 			}
@@ -889,11 +877,6 @@ func openContextFile() (*os.File, error) {
 var labels = loadLabels()
 
 func loadLabels() map[string]string {
-	var (
-		val, key string
-		bufin    *bufio.Reader
-	)
-
 	labels := make(map[string]string)
 	in, err := openContextFile()
 	if err != nil {
@@ -901,18 +884,10 @@ func loadLabels() map[string]string {
 	}
 	defer in.Close()
 
-	bufin = bufio.NewReader(in)
+	scanner := bufio.NewScanner(in)
 
-	for done := false; !done; {
-		var line string
-		if line, err = bufin.ReadString('\n'); err != nil {
-			if err == io.EOF {
-				done = true
-			} else {
-				break
-			}
-		}
-		line = strings.TrimSpace(line)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 		if len(line) == 0 {
 			// Skip blank lines
 			continue
@@ -922,7 +897,7 @@ func loadLabels() map[string]string {
 			continue
 		}
 		if groups := assignRegex.FindStringSubmatch(line); groups != nil {
-			key, val = strings.TrimSpace(groups[1]), strings.TrimSpace(groups[2])
+			key, val := strings.TrimSpace(groups[1]), strings.TrimSpace(groups[2])
 			labels[key] = strings.Trim(val, "\"")
 		}
 	}
