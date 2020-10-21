@@ -35,6 +35,8 @@ const (
 	xattrNameSelinux = "security.selinux"
 )
 
+var policyRoot = filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
+
 type selinuxState struct {
 	enabledSet    bool
 	enabled       bool
@@ -243,10 +245,6 @@ func readConfig(target string) string {
 		}
 	}
 	return ""
-}
-
-func getSELinuxPolicyRoot() string {
-	return filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
 }
 
 func isProcHandle(fh *os.File) error {
@@ -884,7 +882,7 @@ func openContextFile() (*os.File, error) {
 	if f, err := os.Open(contextFile); err == nil {
 		return f, nil
 	}
-	lxcPath := filepath.Join(getSELinuxPolicyRoot(), "/contexts/lxc_contexts")
+	lxcPath := filepath.Join(policyRoot, "/contexts/lxc_contexts")
 	return os.Open(lxcPath)
 }
 
