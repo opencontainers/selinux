@@ -140,7 +140,9 @@ func TestSetEnforceMode(t *testing.T) {
 	t.Log("Enforcing Mode:", EnforceMode())
 	mode := DefaultEnforceMode()
 	t.Log("Default Enforce Mode:", mode)
-	defer SetEnforceMode(mode)
+	defer func() {
+		_ = SetEnforceMode(mode)
+	}()
 
 	if err := SetEnforceMode(Enforcing); err != nil {
 		t.Fatalf("setting selinux mode to enforcing failed: %v", err)
@@ -425,6 +427,8 @@ func BenchmarkChcon(b *testing.B) {
 	b.Logf("Chcon(%q, %q)", dir, con)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		Chcon(dir, con, true)
+		if err := Chcon(dir, con, true); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

@@ -751,7 +751,7 @@ func reserveLabel(label string) {
 	if len(label) != 0 {
 		con := strings.SplitN(label, ":", 4)
 		if len(con) > 3 {
-			mcsAdd(con[3])
+			_ = mcsAdd(con[3])
 		}
 	}
 }
@@ -844,9 +844,9 @@ func uniqMcs(catRange uint32) string {
 	)
 
 	for {
-		binary.Read(rand.Reader, binary.LittleEndian, &n)
+		_ = binary.Read(rand.Reader, binary.LittleEndian, &n)
 		c1 = n % catRange
-		binary.Read(rand.Reader, binary.LittleEndian, &n)
+		_ = binary.Read(rand.Reader, binary.LittleEndian, &n)
 		c2 = n % catRange
 		if c1 == c2 {
 			continue
@@ -1015,7 +1015,7 @@ func copyLevel(src, dest string) (string, error) {
 		return "", err
 	}
 	mcsDelete(tcon["level"])
-	mcsAdd(scon["level"])
+	_ = mcsAdd(scon["level"])
 	tcon["level"] = scon["level"]
 	return tcon.Get(), nil
 }
