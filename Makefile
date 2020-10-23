@@ -35,6 +35,8 @@ build-cross:
 BUILD_PATH := $(shell pwd)/build
 BUILD_BIN_PATH := ${BUILD_PATH}/bin
 GOLANGCI_LINT := ${BUILD_BIN_PATH}/golangci-lint
+GOLANGCI_INSTALL := https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+GOLANGCI_VERSION := v1.31.0
 
 .PHONY: check-gopath
 check-gopath:
@@ -48,11 +50,7 @@ test: check-gopath
 	go test -timeout 3m ${TESTFLAGS} -v ./...
 
 ${GOLANGCI_LINT}:
-	export \
-		VERSION=v1.23.7 \
-		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
-		BINDIR=${BUILD_BIN_PATH} && \
-	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
+	curl -sSfL ${GOLANGCI_INSTALL} | sh -s -- -b ${BUILD_BIN_PATH} ${GOLANGCI_VERSION}
 
 .PHONY: lint
 lint: ${GOLANGCI_LINT}

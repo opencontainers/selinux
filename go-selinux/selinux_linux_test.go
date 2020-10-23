@@ -140,7 +140,9 @@ func TestSetEnforceMode(t *testing.T) {
 	t.Log("Enforcing Mode:", EnforceMode())
 	mode := DefaultEnforceMode()
 	t.Log("Default Enforce Mode:", mode)
-	defer SetEnforceMode(mode)
+	defer func() {
+		_ = SetEnforceMode(mode)
+	}()
 
 	if err := SetEnforceMode(Enforcing); err != nil {
 		t.Fatalf("setting selinux mode to enforcing failed: %v", err)
@@ -261,7 +263,7 @@ func TestClassIndex(t *testing.T) {
 		t.Errorf("ClassIndex unexpected answer %d, possibly not reference policy", idx)
 	}
 
-	idx, err = ClassIndex("foobar")
+	_, err = ClassIndex("foobar")
 	if err == nil {
 		t.Errorf("ClassIndex(\"foobar\") succeeded, expected to fail:")
 	}
@@ -289,7 +291,7 @@ func TestComputeCreateContext(t *testing.T) {
 	process := "process"
 	// Test to ensure that a bad context returns an error
 	t.Logf("ComputeCreateContext(%s, %s, %s)", badcon, tmp, process)
-	context, err = ComputeCreateContext(badcon, tmp, process)
+	_, err = ComputeCreateContext(badcon, tmp, process)
 	if err == nil {
 		t.Errorf("ComputeCreateContext(%s, %s, %s) succeeded, expected failure", badcon, tmp, process)
 	}
@@ -425,6 +427,8 @@ func BenchmarkChcon(b *testing.B) {
 	b.Logf("Chcon(%q, %q)", dir, con)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		Chcon(dir, con, true)
+		if err := Chcon(dir, con, true); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

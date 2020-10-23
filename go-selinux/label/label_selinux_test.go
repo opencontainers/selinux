@@ -16,7 +16,7 @@ func TestInit(t *testing.T) {
 		return
 	}
 	var testNull []string
-	plabel, mlabel, err := InitLabels(testNull)
+	_, _, err := InitLabels(testNull)
 	if err != nil {
 		t.Log("InitLabels Failed")
 		t.Fatal(err)
@@ -26,7 +26,7 @@ func TestInit(t *testing.T) {
 	if roMountLabel == "" {
 		t.Errorf("ROMountLabel Failed")
 	}
-	plabel, mlabel, err = InitLabels(testDisabled)
+	plabel, _, err := InitLabels(testDisabled)
 	if err != nil {
 		t.Log("InitLabels Disabled Failed")
 		t.Fatal(err)
@@ -36,7 +36,7 @@ func TestInit(t *testing.T) {
 		t.FailNow()
 	}
 	testUser := []string{"user:user_u", "role:user_r", "type:user_t", "level:s0:c1,c15"}
-	plabel, mlabel, err = InitLabels(testUser)
+	plabel, mlabel, err := InitLabels(testUser)
 	if err != nil {
 		t.Log("InitLabels User Failed")
 		t.Fatal(err)
