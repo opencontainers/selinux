@@ -157,7 +157,6 @@ func TestIsShared(t *testing.T) {
 	if shared := IsShared("Zz"); !shared {
 		t.Fatalf("Expected label `Zz` to be shared, got %v", shared)
 	}
-
 }
 
 func TestSELinuxNoLevel(t *testing.T) {

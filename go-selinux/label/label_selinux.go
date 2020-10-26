@@ -57,7 +57,6 @@ func InitLabels(options []string) (plabel string, mlabel string, Err error) {
 			con := strings.SplitN(opt, ":", 2)
 			if !validOptions[con[0]] {
 				return "", "", errors.Errorf("Bad label option %q, valid options 'disable, user, role, level, type, filetype'", con[0])
-
 			}
 			if con[0] == "filetype" {
 				mcon["type"] = con[1]
