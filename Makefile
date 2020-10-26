@@ -56,6 +56,7 @@ ${GOLANGCI_LINT}:
 lint: ${GOLANGCI_LINT}
 	${GOLANGCI_LINT} version
 	${GOLANGCI_LINT} linters
+	${GOLANGCI_LINT} run --build-tags "${BUILDTAGS}"
 	${GOLANGCI_LINT} run
 
 .PHONY: vendor
