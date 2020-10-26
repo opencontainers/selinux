@@ -38,7 +38,7 @@ func TestSELinux(t *testing.T) {
 
 	ReserveLabel("foobar")
 	ReleaseLabel("foobar")
-	DupSecOpt("foobar")
+	_, _ = DupSecOpt("foobar")
 	DisableSecOpt()
 	SetDisabled()
 	if enabled := GetEnabled(); enabled {
