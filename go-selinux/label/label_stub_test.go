@@ -32,7 +32,7 @@ func TestInit(t *testing.T) {
 		t.FailNow()
 	}
 	testUser := []string{"user:user_u", "role:user_r", "type:user_t", "level:s0:c1,c15"}
-	plabel, _, err = InitLabels(testUser)
+	_, _, err = InitLabels(testUser)
 	if err != nil {
 		t.Log("InitLabels User Failed")
 		t.Fatal(err)
@@ -112,7 +112,7 @@ func TestCheckLabelCompile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	DupSecOpt("foobar")
+	_, _ = DupSecOpt("foobar")
 	DisableSecOpt()
 
 	if err := Validate("foobar"); err != nil {

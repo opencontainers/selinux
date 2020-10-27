@@ -1,6 +1,4 @@
 ---
 run:
-  build-tags:
-    - selinux
   concurrency: 6
   deadline: 5m
