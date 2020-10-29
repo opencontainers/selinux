@@ -828,11 +828,11 @@ func intToMcs(id int, catRange uint32) string {
 	}
 
 	for ORD > TIER {
-		ORD = ORD - TIER
+		ORD -= TIER
 		TIER--
 	}
 	TIER = SETSIZE - TIER
-	ORD = ORD + TIER
+	ORD += TIER
 	return fmt.Sprintf("s0:c%d,c%d", TIER, ORD)
 }
 
@@ -850,10 +850,8 @@ func uniqMcs(catRange uint32) string {
 		c2 = n % catRange
 		if c1 == c2 {
 			continue
-		} else {
-			if c1 > c2 {
-				c1, c2 = c2, c1
-			}
+		} else if c1 > c2 {
+			c1, c2 = c2, c1
 		}
 		mcs = fmt.Sprintf("s0:c%d,c%d", c1, c2)
 		if err := mcsAdd(mcs); err != nil {
