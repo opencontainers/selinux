@@ -2,3 +2,7 @@
 run:
   concurrency: 6
   deadline: 5m
+linters:
+  enable:
+    - whitespace
+    - gocritic

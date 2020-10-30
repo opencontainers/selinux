@@ -48,7 +48,6 @@ func TestKVMLabels(t *testing.T) {
 	plabel, flabel := KVMContainerLabels()
 	if plabel == "" {
 		t.Log("Failed to read kvm label")
-
 	}
 	t.Log(plabel)
 	t.Log(flabel)
@@ -267,8 +266,8 @@ func TestClassIndex(t *testing.T) {
 	if err == nil {
 		t.Errorf("ClassIndex(\"foobar\") succeeded, expected to fail:")
 	}
-
 }
+
 func TestComputeCreateContext(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
@@ -295,7 +294,6 @@ func TestComputeCreateContext(t *testing.T) {
 	if err == nil {
 		t.Errorf("ComputeCreateContext(%s, %s, %s) succeeded, expected failure", badcon, tmp, process)
 	}
-
 }
 
 func TestGlbLub(t *testing.T) {
