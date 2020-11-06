@@ -111,7 +111,7 @@ func verifySELinuxfsMount(mnt string) bool {
 		if err == nil {
 			break
 		}
-		if err == unix.EAGAIN {
+		if err == unix.EAGAIN || err == unix.EINTR {
 			continue
 		}
 		return false
@@ -251,9 +251,15 @@ func getSELinuxPolicyRoot() string {
 
 func isProcHandle(fh *os.File) error {
 	var buf unix.Statfs_t
-	err := unix.Fstatfs(int(fh.Fd()), &buf)
-	if err != nil {
-		return errors.Wrapf(err, "statfs(%q) failed", fh.Name())
+
+	for {
+		err := unix.Fstatfs(int(fh.Fd()), &buf)
+		if err == nil {
+			break
+		}
+		if err != unix.EINTR {
+			return errors.Wrapf(err, "statfs(%q) failed", fh.Name())
+		}
 	}
 	if buf.Type != unix.PROC_SUPER_MAGIC {
 		return errors.Errorf("file %q is not on procfs", fh.Name())
@@ -307,9 +313,16 @@ func setFileLabel(fpath string, label string) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}
-	if err := unix.Lsetxattr(fpath, xattrNameSelinux, []byte(label), 0); err != nil {
-		return errors.Wrapf(err, "failed to set file label on %s", fpath)
+	for {
+		err := unix.Lsetxattr(fpath, xattrNameSelinux, []byte(label), 0)
+		if err == nil {
+			break
+		}
+		if err != unix.EINTR {
+			return errors.Wrapf(err, "failed to set file label on %s", fpath)
+		}
 	}
+
 	return nil
 }
 
