@@ -1,13 +1,8 @@
 GO ?= go
-BUILDTAGS := selinux
 
 all: build build-cross
 
 define go-build
-	GOOS=$(1) GOARCH=$(2) $(GO) build -tags $(BUILDTAGS) ./...
-endef
-
-define go-build-noselinux
 	GOOS=$(1) GOARCH=$(2) $(GO) build ./...
 endef
 
@@ -24,13 +19,6 @@ build-cross:
 	$(call go-build,linux,s390x)
 	$(call go-build,windows,amd64)
 	$(call go-build,windows,386)
-	$(call go-build-noselinux,linux,amd64)
-	$(call go-build-noselinux,linux,arm)
-	$(call go-build-noselinux,linux,arm64)
-	$(call go-build-noselinux,linux,ppc64le)
-	$(call go-build-noselinux,linux,s390x)
-	$(call go-build-noselinux,windows,amd64)
-	$(call go-build-noselinux,windows,386)
 
 BUILD_PATH := $(shell pwd)/build
 BUILD_BIN_PATH := ${BUILD_PATH}/bin
@@ -46,7 +34,6 @@ endif
 
 .PHONY: test
 test: check-gopath
-	go test -timeout 3m -tags "${BUILDTAGS}" ${TESTFLAGS} -v ./...
 	go test -timeout 3m ${TESTFLAGS} -v ./...
 
 ${GOLANGCI_LINT}:
@@ -56,7 +43,6 @@ ${GOLANGCI_LINT}:
 lint: ${GOLANGCI_LINT}
 	${GOLANGCI_LINT} version
 	${GOLANGCI_LINT} linters
-	${GOLANGCI_LINT} run --build-tags "${BUILDTAGS}"
 	${GOLANGCI_LINT} run
 
 .PHONY: vendor
