@@ -1,4 +1,4 @@
-// +build !selinux !linux
+// +build !linux
 
 package selinux
 
@@ -8,7 +8,7 @@ import (
 
 func TestSELinux(t *testing.T) {
 	if GetEnabled() {
-		t.Fatal("SELinux enabled with build-tag !selinux.")
+		t.Fatal("SELinux enabled on non-linux.")
 	}
 
 	if _, err := FileLabel("/etc"); err != nil {
