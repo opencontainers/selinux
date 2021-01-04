@@ -55,6 +55,7 @@ func WalkN(root string, walkFn WalkFunc, num int) error {
 	)
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		err = filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
 			if err != nil {
 				close(files)
@@ -73,7 +74,6 @@ func WalkN(root string, walkFn WalkFunc, num int) error {
 		if err == nil {
 			close(files)
 		}
-		wg.Done()
 	}()
 
 	wg.Add(num)
