@@ -17,6 +17,7 @@ build-cross:
 	$(call go-build,linux,arm64)
 	$(call go-build,linux,ppc64le)
 	$(call go-build,linux,s390x)
+	$(call go-build,linux,mips64le)
 	$(call go-build,windows,amd64)
 	$(call go-build,windows,386)
 

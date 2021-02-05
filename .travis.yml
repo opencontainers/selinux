@@ -6,6 +6,7 @@ go:
 arch:
   - amd64
   - ppc64le
+  - mips64le
 
 script:
   - make lint build test
