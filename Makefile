@@ -21,30 +21,14 @@ build-cross:
 	$(call go-build,windows,amd64)
 	$(call go-build,windows,386)
 
-BUILD_PATH := $(shell pwd)/build
-BUILD_BIN_PATH := ${BUILD_PATH}/bin
-GOLANGCI_LINT := ${BUILD_BIN_PATH}/golangci-lint
-GOLANGCI_INSTALL := https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-GOLANGCI_VERSION := v1.31.0
-
-.PHONY: check-gopath
-check-gopath:
-ifndef GOPATH
-	$(error GOPATH is not set)
-endif
 
 .PHONY: test
-test: check-gopath
+test:
 	go test -timeout 3m ${TESTFLAGS} -v ./...
 
-${GOLANGCI_LINT}:
-	curl -sSfL ${GOLANGCI_INSTALL} | sh -s -- -b ${BUILD_BIN_PATH} ${GOLANGCI_VERSION}
-
 .PHONY: lint
-lint: ${GOLANGCI_LINT}
-	${GOLANGCI_LINT} version
-	${GOLANGCI_LINT} linters
-	${GOLANGCI_LINT} run
+lint:
+	golangci-lint run
 
 .PHONY: vendor
 vendor:
