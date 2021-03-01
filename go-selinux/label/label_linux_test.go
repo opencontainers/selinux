@@ -9,10 +9,16 @@ import (
 	"github.com/opencontainers/selinux/go-selinux"
 )
 
-func TestInit(t *testing.T) {
+func needSELinux(t *testing.T) {
+	t.Helper()
 	if !selinux.GetEnabled() {
-		return
+		t.Skip("SELinux not enabled, skipping.")
 	}
+}
+
+func TestInit(t *testing.T) {
+	needSELinux(t)
+
 	var testNull []string
 	_, _, err := InitLabels(testNull)
 	if err != nil {
@@ -91,9 +97,8 @@ func TestDuplicateLabel(t *testing.T) {
 	}
 }
 func TestRelabel(t *testing.T) {
-	if !selinux.GetEnabled() {
-		return
-	}
+	needSELinux(t)
+
 	testdir, err := ioutil.TempDir("/tmp", "")
 	if err != nil {
 		t.Fatal(err)
@@ -158,9 +163,8 @@ func TestIsShared(t *testing.T) {
 }
 
 func TestSELinuxNoLevel(t *testing.T) {
-	if !selinux.GetEnabled() {
-		return
-	}
+	needSELinux(t)
+
 	tlabel := "system_u:system_r:container_t"
 	dup, err := DupSecOpt(tlabel)
 	if err != nil {
@@ -180,9 +184,8 @@ func TestSELinuxNoLevel(t *testing.T) {
 }
 
 func TestSocketLabel(t *testing.T) {
-	if !selinux.GetEnabled() {
-		return
-	}
+	needSELinux(t)
+
 	label := "system_u:object_r:container_t:s0:c1,c2"
 	if err := selinux.SetSocketLabel(label); err != nil {
 		t.Fatal(err)
@@ -197,9 +200,8 @@ func TestSocketLabel(t *testing.T) {
 }
 
 func TestKeyLabel(t *testing.T) {
-	if !selinux.GetEnabled() {
-		return
-	}
+	needSELinux(t)
+
 	label := "system_u:object_r:container_t:s0:c1,c2"
 	if err := selinux.SetKeyLabel(label); err != nil {
 		t.Fatal(err)
@@ -214,9 +216,8 @@ func TestKeyLabel(t *testing.T) {
 }
 
 func TestFileLabel(t *testing.T) {
-	if !selinux.GetEnabled() {
-		return
-	}
+	needSELinux(t)
+
 	testUser := []string{"filetype:test_file_t", "level:s0:c1,c15"}
 	_, mlabel, err := InitLabels(testUser)
 	if err != nil {
