@@ -29,15 +29,19 @@ func TestInit(t *testing.T) {
 	if roMountLabel == "" {
 		t.Fatal("ROMountLabel: empty")
 	}
-	plabel, _, err := InitLabels(testDisabled)
+	plabel, mlabel, err := InitLabels(testDisabled)
 	if err != nil {
 		t.Fatalf("InitLabels(disabled) failed: %v", err)
 	}
 	if plabel != "" {
 		t.Fatalf("InitLabels(disabled): %q not empty", plabel)
 	}
+	if mlabel != "system_u:object_r:container_file_t:s0:c1022,c1023" {
+		t.Fatalf("InitLabels Disabled mlabel Failed, %s", mlabel)
+	}
+
 	testUser := []string{"user:user_u", "role:user_r", "type:user_t", "level:s0:c1,c15"}
-	plabel, mlabel, err := InitLabels(testUser)
+	plabel, mlabel, err = InitLabels(testUser)
 	if err != nil {
 		t.Fatalf("InitLabels(user) failed: %v", err)
 	}
@@ -172,7 +176,7 @@ func TestSELinuxNoLevel(t *testing.T) {
 		t.Fatal(err)
 	}
 	if con.Get() != tlabel {
-		t.Errorf("NewContaxt and con.Get() failed on non mls label: expexcted %q, got %q", tlabel, con.Get())
+		t.Errorf("NewContaxt and con.Get() failed on non mls label: expected %q, got %q", tlabel, con.Get())
 	}
 }
 

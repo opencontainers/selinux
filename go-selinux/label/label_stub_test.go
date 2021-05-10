@@ -22,14 +22,16 @@ func TestInit(t *testing.T) {
 	if roMountLabel != "" {
 		t.Errorf("ROMountLabel Failed")
 	}
-	plabel, _, err := InitLabels(testDisabled)
+	plabel, mlabel, err := InitLabels(testDisabled)
 	if err != nil {
 		t.Log("InitLabels Disabled Failed")
 		t.Fatal(err)
 	}
 	if plabel != "" {
-		t.Log("InitLabels Disabled Failed")
-		t.FailNow()
+		t.Fatal("InitLabels Disabled Failed")
+	}
+	if mlabel != "" {
+		t.Fatal("InitLabels Disabled mlabel Failed")
 	}
 	testUser := []string{"user:user_u", "role:user_r", "type:user_t", "level:s0:c1,c15"}
 	_, _, err = InitLabels(testUser)
