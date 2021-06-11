@@ -697,7 +697,11 @@ func socketLabel() (string, error) {
 
 // peerLabel retrieves the label of the client on the other side of a socket
 func peerLabel(fd uintptr) (string, error) {
-	return unix.GetsockoptString(int(fd), unix.SOL_SOCKET, unix.SO_PEERSEC)
+	label, err := unix.GetsockoptString(int(fd), unix.SOL_SOCKET, unix.SO_PEERSEC)
+	if err != nil {
+		return "", &os.PathError{Op: "getsockopt", Path: "fd " + strconv.Itoa(int(fd)), Err: err}
+	}
+	return label, nil
 }
 
 // setKeyLabel takes a process label and tells the kernel to assign the
