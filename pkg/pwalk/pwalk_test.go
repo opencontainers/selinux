@@ -1,6 +1,7 @@
 package pwalk
 
 import (
+	"errors"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -9,8 +10,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 func TestWalk(t *testing.T) {
@@ -190,15 +189,16 @@ func BenchmarkWalk(b *testing.B) {
 		}
 	}
 }
+
 func cbEmpty(_ string, _ os.FileInfo, _ error) error {
 	return nil
 }
 
 func cbChownChmod(path string, info os.FileInfo, _ error) error {
 	_ = os.Chown(path, 0, 0)
-	mode := os.FileMode(0644)
+	mode := os.FileMode(0o644)
 	if info.Mode().IsDir() {
-		mode = os.FileMode(0755)
+		mode = os.FileMode(0o755)
 	}
 	_ = os.Chmod(path, mode)
 

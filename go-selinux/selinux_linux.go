@@ -18,7 +18,6 @@ import (
 
 	"github.com/bits-and-blooms/bitset"
 	"github.com/opencontainers/selinux/pkg/pwalk"
-	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )
 
@@ -251,11 +250,11 @@ func isProcHandle(fh *os.File) error {
 			break
 		}
 		if err != unix.EINTR {
-			return errors.Wrapf(err, "statfs(%q) failed", fh.Name())
+			return &os.PathError{Op: "fstatfs", Path: fh.Name(), Err: err}
 		}
 	}
 	if buf.Type != unix.PROC_SUPER_MAGIC {
-		return errors.Errorf("file %q is not on procfs", fh.Name())
+		return fmt.Errorf("file %q is not on procfs", fh.Name())
 	}
 
 	return nil
@@ -312,7 +311,7 @@ func setFileLabel(fpath string, label string) error {
 			break
 		}
 		if err != unix.EINTR {
-			return errors.Wrapf(err, "failed to set file label on %s", fpath)
+			return &os.PathError{Op: "lsetxattr", Path: fpath, Err: err}
 		}
 	}
 
@@ -390,7 +389,7 @@ func writeCon(fpath, val string) error {
 		_, err = out.Write(nil)
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to set %s on procfs", fpath)
+		return &os.PathError{Op: "write", Path: fpath, Err: err}
 	}
 	return nil
 }
@@ -489,13 +488,13 @@ func (l *level) parseLevel(levelStr string) error {
 	lvl := strings.SplitN(levelStr, ":", 2)
 	sens, err := parseLevelItem(lvl[0], sensitivity)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse sensitivity")
+		return fmt.Errorf("failed to parse sensitivity: %w", err)
 	}
 	l.sens = sens
 	if len(lvl) > 1 {
 		cats, err := catsToBitset(lvl[1])
 		if err != nil {
-			return errors.Wrap(err, "failed to parse categories")
+			return fmt.Errorf("failed to parse categories: %w", err)
 		}
 		l.cats = cats
 	}
@@ -513,14 +512,14 @@ func rangeStrToMLSRange(rangeStr string) (*mlsRange, error) {
 	case 2:
 		mlsRange.high = &level{}
 		if err := mlsRange.high.parseLevel(levelSlice[1]); err != nil {
-			return nil, errors.Wrapf(err, "failed to parse high level %q", levelSlice[1])
+			return nil, fmt.Errorf("failed to parse high level %q: %w", levelSlice[1], err)
 		}
 		fallthrough
 	// rangeStr that is single level, e.g. s6:c0,c3,c5,c30.c1023
 	case 1:
 		mlsRange.low = &level{}
 		if err := mlsRange.low.parseLevel(levelSlice[0]); err != nil {
-			return nil, errors.Wrapf(err, "failed to parse low level %q", levelSlice[0])
+			return nil, fmt.Errorf("failed to parse low level %q: %w", levelSlice[0], err)
 		}
 	}
 
@@ -704,10 +703,10 @@ func peerLabel(fd uintptr) (string, error) {
 // label to the next kernel keyring that gets created
 func setKeyLabel(label string) error {
 	err := writeCon("/proc/self/attr/keycreate", label)
-	if os.IsNotExist(errors.Cause(err)) {
+	if os.IsNotExist(err) {
 		return nil
 	}
-	if label == "" && os.IsPermission(errors.Cause(err)) {
+	if label == "" && os.IsPermission(err) {
 		return nil
 	}
 	return err
@@ -784,7 +783,7 @@ func enforceMode() int {
 // setEnforceMode sets the current SELinux mode Enforcing, Permissive.
 // Disabled is not valid, since this needs to be set at boot time.
 func setEnforceMode(mode int) error {
-	return ioutil.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0644)
+	return ioutil.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0o644)
 }
 
 // defaultEnforceMode returns the systems default SELinux mode Enforcing,
@@ -985,7 +984,7 @@ func addMcs(processLabel, fileLabel string) (string, string) {
 
 // securityCheckContext validates that the SELinux label is understood by the kernel
 func securityCheckContext(val string) error {
-	return ioutil.WriteFile(path.Join(getSelinuxMountPoint(), "context"), []byte(val), 0644)
+	return ioutil.WriteFile(path.Join(getSelinuxMountPoint(), "context"), []byte(val), 0o644)
 }
 
 // copyLevel returns a label with the MLS/MCS level from src label replaced on
@@ -1023,7 +1022,7 @@ func badPrefix(fpath string) error {
 	badPrefixes := []string{"/usr"}
 	for _, prefix := range badPrefixes {
 		if strings.HasPrefix(fpath, prefix) {
-			return errors.Errorf("relabeling content in %s is not allowed", prefix)
+			return fmt.Errorf("relabeling content in %s is not allowed", prefix)
 		}
 	}
 	return nil
@@ -1050,7 +1049,7 @@ func chcon(fpath string, label string, recurse bool) error {
 	return pwalk.Walk(fpath, func(p string, info os.FileInfo, err error) error {
 		e := SetFileLabel(p, label)
 		// Walk a file tree can race with removal, so ignore ENOENT
-		if os.IsNotExist(errors.Cause(e)) {
+		if os.IsNotExist(e) {
 			return nil
 		}
 		return e
@@ -1072,7 +1071,8 @@ func dupSecOpt(src string) ([]string, error) {
 		con["type"] == "" {
 		return nil, nil
 	}
-	dup := []string{"user:" + con["user"],
+	dup := []string{
+		"user:" + con["user"],
 		"role:" + con["role"],
 		"type:" + con["type"],
 	}
@@ -1140,9 +1140,8 @@ func findUserInContext(context Context, r io.Reader, verifier func(string) error
 			return outConn, nil
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
-		return "", errors.Wrap(err, "failed to scan for context")
+		return "", fmt.Errorf("failed to scan for context: %w", err)
 	}
 
 	return "", nil
@@ -1155,7 +1154,7 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 
 	context, err := newContext(c.scon)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create label for %s", c.scon)
+		return "", fmt.Errorf("failed to create label for %s: %w", c.scon, err)
 	}
 
 	// set so the verifier validates the matched context with the provided user and level.
@@ -1180,7 +1179,7 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 		return conn, nil
 	}
 
-	return "", errors.Wrapf(ErrContextMissing, "context not found: %q", c.scon)
+	return "", fmt.Errorf("context %q not found: %w", c.scon, ErrContextMissing)
 }
 
 func getDefaultContextWithLevel(user, level, scon string) (string, error) {
