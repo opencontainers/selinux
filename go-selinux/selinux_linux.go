@@ -327,7 +327,7 @@ func fileLabel(fpath string) (string, error) {
 
 	label, err := lgetxattr(fpath, xattrNameSelinux)
 	if err != nil {
-		return "", err
+		return "", &os.PathError{Op: "lgetxattr", Path: fpath, Err: err}
 	}
 	// Trim the NUL byte at the end of the byte buffer, if present.
 	if len(label) > 0 && label[len(label)-1] == '\x00' {
