@@ -396,7 +396,7 @@ func TestGlbLub(t *testing.T) {
 			// so do that manually.
 			// TODO remove this once we stop supporting Go 1.13.
 			var numErr *strconv.NumError
-			if errors.As(err, &numErr) && numErr.Err == tt.expectedErr {
+			if errors.As(err, &numErr) && numErr.Err == tt.expectedErr { //nolint:errorlint // see above
 				continue
 			}
 			t.Fatalf("want %q got %q: src: %q tgt: %q", tt.expectedErr, err, tt.sourceRange, tt.targetRange)

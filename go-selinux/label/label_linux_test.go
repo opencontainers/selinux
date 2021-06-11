@@ -1,6 +1,7 @@
 package label
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -93,6 +94,7 @@ func TestDuplicateLabel(t *testing.T) {
 		t.Errorf("DisableSecOpt failed: expected \"disable\", got %q", secopt[0])
 	}
 }
+
 func TestRelabel(t *testing.T) {
 	needSELinux(t)
 
@@ -132,8 +134,9 @@ func TestRelabel(t *testing.T) {
 		}
 	}
 }
+
 func TestValidate(t *testing.T) {
-	if err := Validate("zZ"); err != ErrIncompatibleLabel {
+	if err := Validate("zZ"); !errors.Is(err, ErrIncompatibleLabel) {
 		t.Fatalf("Expected incompatible error, got %v", err)
 	}
 	if err := Validate("Z"); err != nil {
