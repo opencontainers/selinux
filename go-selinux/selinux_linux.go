@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -703,10 +704,10 @@ func peerLabel(fd uintptr) (string, error) {
 // label to the next kernel keyring that gets created
 func setKeyLabel(label string) error {
 	err := writeCon("/proc/self/attr/keycreate", label)
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-	if label == "" && os.IsPermission(err) {
+	if label == "" && errors.Is(err, os.ErrPermission) {
 		return nil
 	}
 	return err
@@ -1049,7 +1050,7 @@ func chcon(fpath string, label string, recurse bool) error {
 	return pwalk.Walk(fpath, func(p string, info os.FileInfo, err error) error {
 		e := SetFileLabel(p, label)
 		// Walk a file tree can race with removal, so ignore ENOENT
-		if os.IsNotExist(e) {
+		if errors.Is(e, os.ErrNotExist) {
 			return nil
 		}
 		return e
