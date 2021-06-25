@@ -6,3 +6,5 @@ linters:
   enable:
     - whitespace
     - gocritic
+    - errorlint
+    - gofumpt
