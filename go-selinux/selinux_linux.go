@@ -389,7 +389,7 @@ func writeCon(fpath, val string) error {
 		_, err = out.Write(nil)
 	}
 	if err != nil {
-		return &os.PathError{Op: "write", Path: fpath, Err: err}
+		return err
 	}
 	return nil
 }
