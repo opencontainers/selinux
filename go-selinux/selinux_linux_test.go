@@ -509,3 +509,17 @@ func BenchmarkChcon(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkCurrentLabel(b *testing.B) {
+	var (
+		l   string
+		err error
+	)
+	for n := 0; n < b.N; n++ {
+		l, err = CurrentLabel()
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.Log(l)
+}

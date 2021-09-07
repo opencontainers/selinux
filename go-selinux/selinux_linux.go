@@ -274,12 +274,15 @@ func readCon(fpath string) (string, error) {
 	if err := isProcHandle(in); err != nil {
 		return "", err
 	}
+	return readConFd(in)
+}
 
-	var retval string
-	if _, err := fmt.Fscanf(in, "%s", &retval); err != nil {
+func readConFd(in *os.File) (string, error) {
+	data, err := ioutil.ReadAll(in)
+	if err != nil {
 		return "", err
 	}
-	return strings.Trim(retval, "\x00"), nil
+	return string(bytes.TrimSuffix(data, []byte{0})), nil
 }
 
 // classIndex returns the int index for an object class in the loaded policy,
@@ -664,11 +667,7 @@ func readWriteCon(fpath string, val string) (string, error) {
 		return "", err
 	}
 
-	var retval string
-	if _, err := fmt.Fscanf(f, "%s", &retval); err != nil {
-		return "", err
-	}
-	return strings.Trim(retval, "\x00"), nil
+	return readConFd(f)
 }
 
 // setExecLabel sets the SELinux label that the kernel will use for any programs
