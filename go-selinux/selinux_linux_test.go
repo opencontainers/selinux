@@ -533,3 +533,17 @@ func BenchmarkCurrentLabel(b *testing.B) {
 	}
 	b.Log(l)
 }
+
+func BenchmarkReadConfig(b *testing.B) {
+	str := ""
+	for n := 0; n < b.N; n++ {
+		str = readConfig(selinuxTypeTag)
+	}
+	b.Log(str)
+}
+
+func BenchmarkLoadLabels(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		loadLabels()
+	}
+}

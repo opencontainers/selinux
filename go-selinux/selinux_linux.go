@@ -12,7 +12,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -68,7 +67,6 @@ const (
 )
 
 var (
-	assignRegex       = regexp.MustCompile(`^([^=]+)=(.*)$`)
 	readOnlyFileLabel string
 	state             = selinuxState{
 		mcsList: make(map[string]bool),
@@ -236,7 +234,7 @@ func readConfig(target string) string {
 	scanner := bufio.NewScanner(in)
 
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+		line := bytes.TrimSpace(scanner.Bytes())
 		if len(line) == 0 {
 			// Skip blank lines
 			continue
@@ -245,11 +243,12 @@ func readConfig(target string) string {
 			// Skip comments
 			continue
 		}
-		if groups := assignRegex.FindStringSubmatch(line); groups != nil {
-			key, val := strings.TrimSpace(groups[1]), strings.TrimSpace(groups[2])
-			if key == target {
-				return strings.Trim(val, "\"")
-			}
+		fields := bytes.SplitN(line, []byte{'='}, 2)
+		if len(fields) != 2 {
+			continue
+		}
+		if bytes.Equal(fields[0], []byte(target)) {
+			return string(bytes.Trim(fields[1], `"`))
 		}
 	}
 	return ""
@@ -918,7 +917,7 @@ func loadLabels() {
 	scanner := bufio.NewScanner(in)
 
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+		line := bytes.TrimSpace(scanner.Bytes())
 		if len(line) == 0 {
 			// Skip blank lines
 			continue
@@ -927,10 +926,12 @@ func loadLabels() {
 			// Skip comments
 			continue
 		}
-		if groups := assignRegex.FindStringSubmatch(line); groups != nil {
-			key, val := strings.TrimSpace(groups[1]), strings.TrimSpace(groups[2])
-			labels[key] = strings.Trim(val, "\"")
+		fields := bytes.SplitN(line, []byte{'='}, 2)
+		if len(fields) != 2 {
+			continue
 		}
+		key, val := bytes.TrimSpace(fields[0]), bytes.TrimSpace(fields[1])
+		labels[string(key)] = string(bytes.Trim(val, `"`))
 	}
 
 	con, _ := NewContext(labels["file"])
