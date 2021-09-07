@@ -42,8 +42,6 @@ func TestKVMLabels(t *testing.T) {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
-	t.Log(labels)
-
 	plabel, flabel := KVMContainerLabels()
 	if plabel == "" {
 		t.Log("Failed to read kvm label")

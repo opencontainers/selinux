@@ -81,6 +81,10 @@ var (
 	// for policyRoot()
 	policyRootOnce sync.Once
 	policyRootVal  string
+
+	// for label()
+	loadLabelsOnce sync.Once
+	labels         map[string]string
 )
 
 func policyRoot() string {
@@ -903,13 +907,11 @@ func openContextFile() (*os.File, error) {
 	return os.Open(filepath.Join(policyRoot(), "/contexts/lxc_contexts"))
 }
 
-var labels, privContainerMountLabel = loadLabels()
-
-func loadLabels() (map[string]string, string) {
-	labels := make(map[string]string)
+func loadLabels() {
+	labels = make(map[string]string)
 	in, err := openContextFile()
 	if err != nil {
-		return labels, ""
+		return
 	}
 	defer in.Close()
 
@@ -933,30 +935,37 @@ func loadLabels() (map[string]string, string) {
 
 	con, _ := NewContext(labels["file"])
 	con["level"] = fmt.Sprintf("s0:c%d,c%d", maxCategory-2, maxCategory-1)
-	reserveLabel(con.get())
-	return labels, con.get()
+	privContainerMountLabel = con.get()
+	reserveLabel(privContainerMountLabel)
+}
+
+func label(key string) string {
+	loadLabelsOnce.Do(func() {
+		loadLabels()
+	})
+	return labels[key]
 }
 
 // kvmContainerLabels returns the default processLabel and mountLabel to be used
 // for kvm containers by the calling process.
 func kvmContainerLabels() (string, string) {
-	processLabel := labels["kvm_process"]
+	processLabel := label("kvm_process")
 	if processLabel == "" {
-		processLabel = labels["process"]
+		processLabel = label("process")
 	}
 
-	return addMcs(processLabel, labels["file"])
+	return addMcs(processLabel, label("file"))
 }
 
 // initContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
 func initContainerLabels() (string, string) {
-	processLabel := labels["init_process"]
+	processLabel := label("init_process")
 	if processLabel == "" {
-		processLabel = labels["process"]
+		processLabel = label("process")
 	}
 
-	return addMcs(processLabel, labels["file"])
+	return addMcs(processLabel, label("file"))
 }
 
 // containerLabels returns an allocated processLabel and fileLabel to be used for
@@ -966,9 +975,9 @@ func containerLabels() (processLabel string, fileLabel string) {
 		return "", ""
 	}
 
-	processLabel = labels["process"]
-	fileLabel = labels["file"]
-	readOnlyFileLabel = labels["ro_file"]
+	processLabel = label("process")
+	fileLabel = label("file")
+	readOnlyFileLabel = label("ro_file")
 
 	if processLabel == "" || fileLabel == "" {
 		return "", fileLabel
