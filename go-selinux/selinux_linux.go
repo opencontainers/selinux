@@ -34,8 +34,6 @@ const (
 	xattrNameSelinux = "security.selinux"
 )
 
-var policyRoot = filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
-
 type selinuxState struct {
 	enabledSet    bool
 	enabled       bool
@@ -79,7 +77,19 @@ var (
 	// for attrPath()
 	attrPathOnce   sync.Once
 	haveThreadSelf bool
+
+	// for policyRoot()
+	policyRootOnce sync.Once
+	policyRootVal  string
 )
+
+func policyRoot() string {
+	policyRootOnce.Do(func() {
+		policyRootVal = filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
+	})
+
+	return policyRootVal
+}
 
 func (s *selinuxState) setEnable(enabled bool) bool {
 	s.Lock()
@@ -890,8 +900,7 @@ func openContextFile() (*os.File, error) {
 	if f, err := os.Open(contextFile); err == nil {
 		return f, nil
 	}
-	lxcPath := filepath.Join(policyRoot, "/contexts/lxc_contexts")
-	return os.Open(lxcPath)
+	return os.Open(filepath.Join(policyRoot(), "/contexts/lxc_contexts"))
 }
 
 var labels, privContainerMountLabel = loadLabels()
@@ -1179,15 +1188,14 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 }
 
 func getDefaultContextWithLevel(user, level, scon string) (string, error) {
-	userPath := filepath.Join(policyRoot, selinuxUsersDir, user)
-	defaultPath := filepath.Join(policyRoot, defaultContexts)
-
+	userPath := filepath.Join(policyRoot(), selinuxUsersDir, user)
 	fu, err := os.Open(userPath)
 	if err != nil {
 		return "", err
 	}
 	defer fu.Close()
 
+	defaultPath := filepath.Join(policyRoot(), defaultContexts)
 	fd, err := os.Open(defaultPath)
 	if err != nil {
 		return "", err
