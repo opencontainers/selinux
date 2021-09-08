@@ -80,6 +80,18 @@ func TestInitLabels(t *testing.T) {
 	ReleaseLabel(plabel)
 }
 
+func BenchmarkContextGet(b *testing.B) {
+	ctx, err := NewContext("system_u:object_r:container_file_t:s0:c1022,c1023")
+	if err != nil {
+		b.Fatal(err)
+	}
+	str := ""
+	for i := 0; i < b.N; i++ {
+		str = ctx.get()
+	}
+	b.Log(str)
+}
+
 func TestSELinux(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
