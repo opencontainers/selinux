@@ -723,10 +723,10 @@ func keyLabel() (string, error) {
 
 // get returns the Context as a string
 func (c Context) get() string {
-	if c["level"] != "" {
-		return fmt.Sprintf("%s:%s:%s:%s", c["user"], c["role"], c["type"], c["level"])
+	if level := c["level"]; level != "" {
+		return c["user"] + ":" + c["role"] + ":" + c["type"] + ":" + level
 	}
-	return fmt.Sprintf("%s:%s:%s", c["user"], c["role"], c["type"])
+	return c["user"] + ":" + c["role"] + ":" + c["type"]
 }
 
 // newContext creates a new Context struct from the specified label
