@@ -38,6 +38,22 @@ var (
 
 	// CategoryRange allows the upper bound on the category range to be adjusted
 	CategoryRange = DefaultCategoryRange
+
+	ROContainerFileTypes = []string{
+		"bin_t",
+		"boot_t",
+		"etc_runtime_t",
+		"etc_t",
+		"lib_t",
+		"shell_exec_t",
+		"src_t",
+		"system_conf_t",
+		"system_db_t",
+		"textrel_shlib_t",
+		"usr_t",
+		"container_file_t",
+		"container_ro_file_t",
+	}
 )
 
 // Context is a representation of the SELinux label broken into 4 parts
