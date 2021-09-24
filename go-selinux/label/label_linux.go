@@ -103,10 +103,23 @@ func SetFileCreateLabel(fileLabel string) error {
 	return selinux.SetFSCreateLabel(fileLabel)
 }
 
-// Relabel changes the label of path to the filelabel string.
+// Relabel changes the label of path and all the entries beneath the path,
 // It changes the MCS label to s0 if shared is true.
 // This will allow all containers to share the content.
 func Relabel(path string, fileLabel string, shared bool) error {
+	return relabel(path, fileLabel, shared, false)
+}
+
+// MaybeRelabel changes the label of path and all the entries beneath the path,
+// It changes the MCS label to s0 if shared is true.
+// This will allow all containers to share the content.
+// Unlike Relabel, the relabeling is only performed if path's label do not match the requested one.
+func MaybeRelabel(path string, fileLabel string, shared bool) error {
+	return relabel(path, fileLabel, shared, true)
+}
+
+// An internal function that relabels a path.
+func relabel(path string, fileLabel string, shared, stopIfAlreadyLabeled bool) error {
 	if !selinux.GetEnabled() || fileLabel == "" {
 		return nil
 	}
@@ -164,10 +177,10 @@ func Relabel(path string, fileLabel string, shared bool) error {
 		c["level"] = "s0"
 		fileLabel = c.Get()
 	}
-	if err := selinux.Chcon(path, fileLabel, true); err != nil {
-		return err
+	if stopIfAlreadyLabeled {
+		return selinux.MaybeChcon(path, fileLabel, true)
 	}
-	return nil
+	return selinux.Chcon(path, fileLabel, true)
 }
 
 // DisableSecOpt returns a security opt that can disable labeling

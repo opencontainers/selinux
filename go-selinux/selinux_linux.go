@@ -1050,8 +1050,10 @@ func badPrefix(fpath string) error {
 
 // chcon changes the fpath file object to the SELinux label label.
 // If fpath is a directory and recurse is true, then chcon walks the
-// directory tree setting the label.
-func chcon(fpath string, label string, recurse bool) error {
+// directory tree setting the label, except when stopIfAlreadyLabeled is true and
+// fpath is already labeled correctly, in which case the relabeling
+// is not performed.
+func chcon(fpath string, label string, recurse, stopIfAlreadyLabeled bool) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}
@@ -1064,6 +1066,18 @@ func chcon(fpath string, label string, recurse bool) error {
 
 	if !recurse {
 		return setFileLabel(fpath, label)
+	}
+
+	if stopIfAlreadyLabeled {
+		currentLabel, err := fileLabel(fpath)
+		if err != nil {
+			return err
+		}
+		// Top level is already labeled correctly,
+		// assume the rest is as well.
+		if label == currentLabel {
+			return nil
+		}
 	}
 
 	return rchcon(fpath, label)

@@ -256,7 +256,15 @@ func CopyLevel(src, dest string) (string, error) {
 // If fpath is a directory and recurse is true, then Chcon walks the
 // directory tree setting the label.
 func Chcon(fpath string, label string, recurse bool) error {
-	return chcon(fpath, label, recurse)
+	return chcon(fpath, label, recurse, false)
+}
+
+// MaybeChcon changes the fpath file object to the SELinux label label.
+// If fpath is a directory and recurse is true, then Chcon walks the
+// directory tree setting the label, as long as fpath was not already labeled.
+// with the requested label.
+func MaybeChcon(fpath string, label string, recurse bool) error {
+	return chcon(fpath, label, recurse, true)
 }
 
 // DupSecOpt takes an SELinux process label and returns security options that

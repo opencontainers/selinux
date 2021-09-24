@@ -135,7 +135,7 @@ func copyLevel(src, dest string) (string, error) {
 	return "", nil
 }
 
-func chcon(fpath string, label string, recurse bool) error {
+func chcon(fpath string, label string, recurse, stopIfAlreadyLabeled bool) error {
 	return nil
 }
 
