@@ -64,7 +64,7 @@ func WalkN(root string, walkFn fs.WalkDirFunc, num int) error {
 				return err
 			}
 			if len(p) == rootLen {
-				// Don't add root entry just yet.
+				// Root entry is processed separately below.
 				rootEntry = &walkArgs{path: p, entry: entry}
 				return nil
 			}
@@ -79,8 +79,6 @@ func WalkN(root string, walkFn fs.WalkDirFunc, num int) error {
 			}
 		})
 		if err == nil {
-			// Finally, add the root entry.
-			files <- rootEntry
 			close(files)
 		}
 		wg.Done()
@@ -102,6 +100,10 @@ func WalkN(root string, walkFn fs.WalkDirFunc, num int) error {
 	}
 
 	wg.Wait()
+
+	if err == nil {
+		err = walkFn(rootEntry.path, rootEntry.entry, nil)
+	}
 
 	return err
 }

@@ -26,10 +26,8 @@ func TestWalkDir(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	var last string
 	err = WalkN(dir,
-		func(p string, _ fs.DirEntry, _ error) error {
-			last = p
+		func(_ string, _ fs.DirEntry, _ error) error {
 			atomic.AddUint32(&count, 1)
 			return nil
 		},
@@ -40,9 +38,6 @@ func TestWalkDir(t *testing.T) {
 	}
 	if count != uint32(total) {
 		t.Errorf("File count mismatch: found %d, expected %d", count, total)
-	}
-	if last != dir {
-		t.Errorf("Last entry: want %q, got %q", dir, last)
 	}
 
 	t.Logf("concurrency: %d, files found: %d\n", concurrency, count)
