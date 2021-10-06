@@ -3,7 +3,7 @@ GO ?= go
 all: build build-cross
 
 define go-build
-	GOOS=$(1) GOARCH=$(2) $(GO) build ./...
+	GOOS=$(1) GOARCH=$(2) $(GO) build ${BUILDFLAGS} ./...
 endef
 
 .PHONY: build
