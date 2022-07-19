@@ -30,40 +30,40 @@ jobs:
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: golangci/golangci-lint-action@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v2
         with:
-          # must be specified without patch version
-          version: v1.36
-          # Only show new issues for a pull request.
-          only-new-issues: true
+          go-version: 1.18.x
+      - uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.46
 
   cross:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
-    - name: cross
-      run: make build-cross
+      - uses: actions/checkout@v3
+      - name: cross
+        run: make build-cross
 
 
   test:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.15.x, 1.16.x, 1.17.x]
+        go-version: [1.16.x, 1.17.x, 1.18.x]
         race: ["-race", ""]
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-    - name: install go ${{ matrix.go-version }}
-      uses: actions/setup-go@v2
-      with:
-        stable: '!contains(${{ matrix.go-version }}, "beta") && !contains(${{ matrix.go-version }}, "rc")'
-        go-version: ${{ matrix.go-version }}
+      - name: install go ${{ matrix.go-version }}
+        uses: actions/setup-go@v2
+        with:
+          stable: '!contains(${{ matrix.go-version }}, "beta") && !contains(${{ matrix.go-version }}, "rc")'
+          go-version: ${{ matrix.go-version }}
 
-    - name: build
-      run: make BUILDFLAGS="${{ matrix.race }}" build
+      - name: build
+        run: make BUILDFLAGS="${{ matrix.race }}" build
 
-    - name: test
-      run: make TESTFLAGS="${{ matrix.race }}" test
+      - name: test
+        run: make TESTFLAGS="${{ matrix.race }}" test
