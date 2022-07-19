@@ -41,9 +41,9 @@ jobs:
   cross:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
-    - name: cross
-      run: make build-cross
+      - uses: actions/checkout@v2
+      - name: cross
+        run: make build-cross
 
 
   test:
@@ -54,16 +54,16 @@ jobs:
         race: ["-race", ""]
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: install go ${{ matrix.go-version }}
-      uses: actions/setup-go@v2
-      with:
-        stable: '!contains(${{ matrix.go-version }}, "beta") && !contains(${{ matrix.go-version }}, "rc")'
-        go-version: ${{ matrix.go-version }}
+      - name: install go ${{ matrix.go-version }}
+        uses: actions/setup-go@v2
+        with:
+          stable: '!contains(${{ matrix.go-version }}, "beta") && !contains(${{ matrix.go-version }}, "rc")'
+          go-version: ${{ matrix.go-version }}
 
-    - name: build
-      run: make BUILDFLAGS="${{ matrix.race }}" build
+      - name: build
+        run: make BUILDFLAGS="${{ matrix.race }}" build
 
-    - name: test
-      run: make TESTFLAGS="${{ matrix.race }}" test
+      - name: test
+        run: make TESTFLAGS="${{ matrix.race }}" test
