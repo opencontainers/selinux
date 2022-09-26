@@ -1084,7 +1084,24 @@ func chcon(fpath string, label string, recurse bool) error {
 	}
 
 	if !recurse {
-		return setFileLabel(fpath, label)
+		err := lSetFileLabel(fpath, label)
+		if err != nil {
+			// Check if file doesn't exist, must have been removed
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			// Check if current label is correct on disk
+			flabel, nerr := lFileLabel(fpath)
+			if nerr == nil && flabel == label {
+				return nil
+			}
+			// Check if file doesn't exist, must have been removed
+			if errors.Is(nerr, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		return nil
 	}
 
 	return rchcon(fpath, label)
