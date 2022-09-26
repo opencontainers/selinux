@@ -1072,21 +1072,6 @@ func copyLevel(src, dest string) (string, error) {
 	return tcon.Get(), nil
 }
 
-// Prevent users from relabeling system files
-func badPrefix(fpath string) error {
-	if fpath == "" {
-		return ErrEmptyPath
-	}
-
-	badPrefixes := []string{"/usr"}
-	for _, prefix := range badPrefixes {
-		if strings.HasPrefix(fpath, prefix) {
-			return fmt.Errorf("relabeling content in %s is not allowed", prefix)
-		}
-	}
-	return nil
-}
-
 // chcon changes the fpath file object to the SELinux label label.
 // If fpath is a directory and recurse is true, then chcon walks the
 // directory tree setting the label.
@@ -1096,9 +1081,6 @@ func chcon(fpath string, label string, recurse bool) error {
 	}
 	if label == "" {
 		return nil
-	}
-	if err := badPrefix(fpath); err != nil {
-		return err
 	}
 
 	if !recurse {
