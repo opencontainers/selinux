@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"os/user"
@@ -155,7 +154,7 @@ func findSELinuxfs() string {
 	}
 
 	// check if selinuxfs is available before going the slow path
-	fs, err := ioutil.ReadFile("/proc/filesystems")
+	fs, err := os.ReadFile("/proc/filesystems")
 	if err != nil {
 		return ""
 	}
@@ -292,7 +291,7 @@ func readCon(fpath string) (string, error) {
 }
 
 func readConFd(in *os.File) (string, error) {
-	data, err := ioutil.ReadAll(in)
+	data, err := io.ReadAll(in)
 	if err != nil {
 		return "", err
 	}
@@ -305,7 +304,7 @@ func classIndex(class string) (int, error) {
 	permpath := fmt.Sprintf("class/%s/index", class)
 	indexpath := filepath.Join(getSelinuxMountPoint(), permpath)
 
-	indexB, err := ioutil.ReadFile(indexpath)
+	indexB, err := os.ReadFile(indexpath)
 	if err != nil {
 		return -1, err
 	}
@@ -823,7 +822,7 @@ func selinuxEnforcePath() string {
 func enforceMode() int {
 	var enforce int
 
-	enforceB, err := ioutil.ReadFile(selinuxEnforcePath())
+	enforceB, err := os.ReadFile(selinuxEnforcePath())
 	if err != nil {
 		return -1
 	}
@@ -837,7 +836,7 @@ func enforceMode() int {
 // setEnforceMode sets the current SELinux mode Enforcing, Permissive.
 // Disabled is not valid, since this needs to be set at boot time.
 func setEnforceMode(mode int) error {
-	return ioutil.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0o644)
+	return os.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0o644)
 }
 
 // defaultEnforceMode returns the systems default SELinux mode Enforcing,
@@ -1044,7 +1043,7 @@ func addMcs(processLabel, fileLabel string) (string, string) {
 
 // securityCheckContext validates that the SELinux label is understood by the kernel
 func securityCheckContext(val string) error {
-	return ioutil.WriteFile(path.Join(getSelinuxMountPoint(), "context"), []byte(val), 0o644)
+	return os.WriteFile(path.Join(getSelinuxMountPoint(), "context"), []byte(val), 0o644)
 }
 
 // copyLevel returns a label with the MLS/MCS level from src label replaced on

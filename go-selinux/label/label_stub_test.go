@@ -3,11 +3,7 @@
 
 package label
 
-import (
-	"io/ioutil"
-	"os"
-	"testing"
-)
+import "testing"
 
 const testLabel = "system_u:object_r:container_file_t:s0:c1,c2"
 
@@ -43,13 +39,7 @@ func TestInit(t *testing.T) {
 }
 
 func TestRelabel(t *testing.T) {
-	testdir, err := ioutil.TempDir("/tmp", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(testdir)
-	label := testLabel
-	if err := Relabel("/etc", label, false); err != nil {
+	if err := Relabel("/etc", testLabel, false); err != nil {
 		t.Fatalf("Relabel /etc succeeded")
 	}
 }
