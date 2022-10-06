@@ -1180,12 +1180,6 @@ func dupSecOpt(src string) ([]string, error) {
 	return dup, nil
 }
 
-// disableSecOpt returns a security opt that can be used to disable SELinux
-// labeling support for future container processes.
-func disableSecOpt() []string {
-	return []string{"disable"}
-}
-
 // findUserInContext scans the reader for a valid SELinux context
 // match that is verified with the verifier. Invalid contexts are
 // skipped. It returns a matched context or an empty string if no

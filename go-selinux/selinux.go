@@ -284,7 +284,7 @@ func DupSecOpt(src string) ([]string, error) {
 // DisableSecOpt returns a security opt that can be used to disable SELinux
 // labeling support for future container processes.
 func DisableSecOpt() []string {
-	return disableSecOpt()
+	return []string{"disable"}
 }
 
 // GetDefaultContextWithLevel gets a single context for the specified SELinux user

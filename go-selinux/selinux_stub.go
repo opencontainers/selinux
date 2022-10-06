@@ -152,10 +152,6 @@ func dupSecOpt(src string) ([]string, error) {
 	return nil, nil
 }
 
-func disableSecOpt() []string {
-	return []string{"disable"}
-}
-
 func getDefaultContextWithLevel(user, level, scon string) (string, error) {
 	return "", nil
 }
