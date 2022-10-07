@@ -2,7 +2,6 @@ package pwalk
 
 import (
 	"errors"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -70,13 +69,13 @@ func TestWalkManyErrors(t *testing.T) {
 func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error) {
 	for d := 0; d < dirs; d++ {
 		var dir string
-		dir, err = ioutil.TempDir(prefix, "d-")
+		dir, err = os.MkdirTemp(prefix, "d-")
 		if err != nil {
 			return
 		}
 		count++
 		for f := 0; f < files; f++ {
-			fi, err := ioutil.TempFile(dir, "f-")
+			fi, err := os.CreateTemp(dir, "f-")
 			if err != nil {
 				return count, err
 			}
@@ -102,7 +101,7 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error)
 // Total dirs: dirs^levels + dirs^(levels-1) + ... + dirs^1
 // Total files: total_dirs * files
 func prepareTestSet(levels, dirs, files int) (dir string, total int, err error) {
-	dir, err = ioutil.TempDir(".", "pwalk-test-")
+	dir, err = os.MkdirTemp(".", "pwalk-test-")
 	if err != nil {
 		return
 	}
@@ -208,7 +207,7 @@ func cbChownChmod(path string, info os.FileInfo, _ error) error {
 func cbReadFile(path string, info os.FileInfo, _ error) error {
 	var err error
 	if info.Mode().IsRegular() {
-		_, err = ioutil.ReadFile(path)
+		_, err = os.ReadFile(path)
 	}
 	return err
 }
