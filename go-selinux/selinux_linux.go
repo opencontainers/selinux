@@ -390,21 +390,19 @@ func lFileLabel(fpath string) (string, error) {
 	return string(label), nil
 }
 
-// setFSCreateLabel tells kernel the label to create all file system objects
-// created by this task. Setting label="" to return to default.
 func setFSCreateLabel(label string) error {
-	return writeAttr("fscreate", label)
+	return writeCon(attrPath("fscreate"), label)
 }
 
 // fsCreateLabel returns the default label the kernel which the kernel is using
 // for file system objects created by this task. "" indicates default.
 func fsCreateLabel() (string, error) {
-	return readAttr("fscreate")
+	return readCon(attrPath("fscreate"))
 }
 
 // currentLabel returns the SELinux label of the current process thread, or an error.
 func currentLabel() (string, error) {
-	return readAttr("current")
+	return readCon(attrPath("current"))
 }
 
 // pidLabel returns the SELinux label of the given pid, or an error.
@@ -415,7 +413,7 @@ func pidLabel(pid int) (string, error) {
 // ExecLabel returns the SELinux label that the kernel will use for any programs
 // that are executed by the current process thread, or an error.
 func execLabel() (string, error) {
-	return readAttr("exec")
+	return readCon(attrPath("exec"))
 }
 
 func writeCon(fpath, val string) error {
@@ -465,14 +463,6 @@ func attrPath(attr string) string {
 	}
 
 	return path.Join("/proc/self/task/", strconv.Itoa(unix.Gettid()), "/attr/", attr)
-}
-
-func readAttr(attr string) (string, error) {
-	return readCon(attrPath(attr))
-}
-
-func writeAttr(attr, val string) error {
-	return writeCon(attrPath(attr), val)
 }
 
 // canonicalizeContext takes a context string and writes it to the kernel
@@ -720,29 +710,6 @@ func readWriteCon(fpath string, val string) (string, error) {
 	return readConFd(f)
 }
 
-// setExecLabel sets the SELinux label that the kernel will use for any programs
-// that are executed by the current process thread, or an error.
-func setExecLabel(label string) error {
-	return writeAttr("exec", label)
-}
-
-// setTaskLabel sets the SELinux label for the current thread, or an error.
-// This requires the dyntransition permission.
-func setTaskLabel(label string) error {
-	return writeAttr("current", label)
-}
-
-// setSocketLabel takes a process label and tells the kernel to assign the
-// label to the next socket that gets created
-func setSocketLabel(label string) error {
-	return writeAttr("sockcreate", label)
-}
-
-// socketLabel retrieves the current socket label setting
-func socketLabel() (string, error) {
-	return readAttr("sockcreate")
-}
-
 // peerLabel retrieves the label of the client on the other side of a socket
 func peerLabel(fd uintptr) (string, error) {
 	label, err := unix.GetsockoptString(int(fd), unix.SOL_SOCKET, unix.SO_PEERSEC)
@@ -763,11 +730,6 @@ func setKeyLabel(label string) error {
 		return nil
 	}
 	return err
-}
-
-// keyLabel retrieves the current kernel keyring label setting
-func keyLabel() (string, error) {
-	return readCon("/proc/self/attr/keycreate")
 }
 
 // get returns the Context as a string
