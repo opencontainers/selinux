@@ -11,7 +11,6 @@ import (
 	"math/big"
 	"os"
 	"os/user"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -461,10 +460,10 @@ func attrPath(attr string) string {
 	})
 
 	if haveThreadSelf {
-		return path.Join(threadSelfPrefix, attr)
+		return filepath.Join(threadSelfPrefix, attr)
 	}
 
-	return path.Join("/proc/self/task/", strconv.Itoa(unix.Gettid()), "/attr/", attr)
+	return filepath.Join("/proc/self/task", strconv.Itoa(unix.Gettid()), "attr", attr)
 }
 
 func readAttr(attr string) (string, error) {
@@ -815,7 +814,7 @@ func reserveLabel(label string) {
 }
 
 func selinuxEnforcePath() string {
-	return path.Join(getSelinuxMountPoint(), "enforce")
+	return filepath.Join(getSelinuxMountPoint(), "enforce")
 }
 
 // enforceMode returns the current SELinux mode Enforcing, Permissive, Disabled
@@ -940,7 +939,7 @@ func openContextFile() (*os.File, error) {
 	if f, err := os.Open(contextFile); err == nil {
 		return f, nil
 	}
-	return os.Open(filepath.Join(policyRoot(), "/contexts/lxc_contexts"))
+	return os.Open(filepath.Join(policyRoot(), "contexts", "lxc_contexts"))
 }
 
 func loadLabels() {
@@ -1043,7 +1042,7 @@ func addMcs(processLabel, fileLabel string) (string, string) {
 
 // securityCheckContext validates that the SELinux label is understood by the kernel
 func securityCheckContext(val string) error {
-	return os.WriteFile(path.Join(getSelinuxMountPoint(), "context"), []byte(val), 0o644)
+	return os.WriteFile(filepath.Join(getSelinuxMountPoint(), "context"), []byte(val), 0o644)
 }
 
 // copyLevel returns a label with the MLS/MCS level from src label replaced on
