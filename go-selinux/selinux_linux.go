@@ -549,30 +549,30 @@ func (l *level) parseLevel(levelStr string) error {
 
 // rangeStrToMLSRange marshals a string representation of a range.
 func rangeStrToMLSRange(rangeStr string) (*mlsRange, error) {
-	mlsRange := &mlsRange{}
-	levelSlice := strings.SplitN(rangeStr, "-", 2)
+	r := &mlsRange{}
+	l := strings.SplitN(rangeStr, "-", 2)
 
-	switch len(levelSlice) {
+	switch len(l) {
 	// rangeStr that has a low and a high level, e.g. s4:c0.c1023-s6:c0.c1023
 	case 2:
-		mlsRange.high = &level{}
-		if err := mlsRange.high.parseLevel(levelSlice[1]); err != nil {
-			return nil, fmt.Errorf("failed to parse high level %q: %w", levelSlice[1], err)
+		r.high = &level{}
+		if err := r.high.parseLevel(l[1]); err != nil {
+			return nil, fmt.Errorf("failed to parse high level %q: %w", l[1], err)
 		}
 		fallthrough
 	// rangeStr that is single level, e.g. s6:c0,c3,c5,c30.c1023
 	case 1:
-		mlsRange.low = &level{}
-		if err := mlsRange.low.parseLevel(levelSlice[0]); err != nil {
-			return nil, fmt.Errorf("failed to parse low level %q: %w", levelSlice[0], err)
+		r.low = &level{}
+		if err := r.low.parseLevel(l[0]); err != nil {
+			return nil, fmt.Errorf("failed to parse low level %q: %w", l[0], err)
 		}
 	}
 
-	if mlsRange.high == nil {
-		mlsRange.high = mlsRange.low
+	if r.high == nil {
+		r.high = r.low
 	}
 
-	return mlsRange, nil
+	return r, nil
 }
 
 // bitsetToStr takes a category bitset and returns it in the
@@ -712,11 +712,11 @@ func readWriteCon(fpath string, val string) (string, error) {
 
 // peerLabel retrieves the label of the client on the other side of a socket
 func peerLabel(fd uintptr) (string, error) {
-	label, err := unix.GetsockoptString(int(fd), unix.SOL_SOCKET, unix.SO_PEERSEC)
+	l, err := unix.GetsockoptString(int(fd), unix.SOL_SOCKET, unix.SO_PEERSEC)
 	if err != nil {
 		return "", &os.PathError{Op: "getsockopt", Path: "fd " + strconv.Itoa(int(fd)), Err: err}
 	}
-	return label, nil
+	return l, nil
 }
 
 // setKeyLabel takes a process label and tells the kernel to assign the
@@ -734,8 +734,8 @@ func setKeyLabel(label string) error {
 
 // get returns the Context as a string
 func (c Context) get() string {
-	if level := c["level"]; level != "" {
-		return c["user"] + ":" + c["role"] + ":" + c["type"] + ":" + level
+	if l := c["level"]; l != "" {
+		return c["user"] + ":" + c["role"] + ":" + c["type"] + ":" + l
 	}
 	return c["user"] + ":" + c["role"] + ":" + c["type"]
 }
