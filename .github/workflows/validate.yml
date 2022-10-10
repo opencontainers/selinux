@@ -45,6 +45,15 @@ jobs:
       - name: cross
         run: make build-cross
 
+  test-stubs:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.x
+      - name: test-stubs
+        run: make test
 
   test:
     strategy:
