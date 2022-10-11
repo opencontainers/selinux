@@ -4,7 +4,17 @@ run:
   deadline: 5m
 linters:
   enable:
-    - whitespace
-    - gocritic
-    - errorlint
-    - gofumpt
+    - errorlint     # Detects code that may cause problems with Go 1.13 error wrapping.
+    - gocritic      # Metalinter; detects bugs, performance, and styling issues.
+    - gofumpt       # Detects whether code was gofumpt-ed.
+linters-settings:
+  govet:
+    check-shadowing: true
+    settings:
+      shadow:
+        strict: true
+issues:
+  exclude-rules:
+    - text: '^shadow: declaration of "err" shadows declaration'
+      linters:
+        - govet

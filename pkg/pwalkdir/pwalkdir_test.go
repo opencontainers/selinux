@@ -79,7 +79,8 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error)
 		}
 		count++
 		for f := 0; f < files; f++ {
-			fi, err := os.CreateTemp(dir, "f-")
+			var fi *os.File
+			fi, err = os.CreateTemp(dir, "f-")
 			if err != nil {
 				return count, err
 			}
@@ -176,15 +177,13 @@ func BenchmarkWalk(b *testing.B) {
 			walker := w.walker
 			walkFn := bm.walk
 			// preheat
-			err := w.walker(dir, bm.walk)
-			if err != nil {
+			if err := w.walker(dir, bm.walk); err != nil {
 				b.Errorf("walk failed: %v", err)
 			}
 			// benchmark
 			b.Run(bm.name+"/"+w.name, func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					err := walker(dir, walkFn)
-					if err != nil {
+					if err := walker(dir, walkFn); err != nil {
 						b.Errorf("walk failed: %v", err)
 					}
 				}
