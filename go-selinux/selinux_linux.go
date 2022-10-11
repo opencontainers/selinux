@@ -748,7 +748,7 @@ func newContext(label string) (Context, error) {
 	if len(label) != 0 {
 		con := strings.SplitN(label, ":", 4)
 		if len(con) < 3 {
-			return c, InvalidLabel
+			return c, ErrInvalidLabel
 		}
 		c["user"] = con[0]
 		c["role"] = con[1]

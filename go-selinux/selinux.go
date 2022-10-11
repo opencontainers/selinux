@@ -23,8 +23,13 @@ var (
 	// ErrEmptyPath is returned when an empty path has been specified.
 	ErrEmptyPath = errors.New("empty path")
 
+	// ErrInvalidLabel is returned when an invalid label is specified.
+	ErrInvalidLabel = errors.New("invalid Label")
+
 	// InvalidLabel is returned when an invalid label is specified.
-	InvalidLabel = errors.New("Invalid Label")
+	//
+	// Deprecated: use [ErrInvalidLabel].
+	InvalidLabel = ErrInvalidLabel
 
 	// ErrIncomparable is returned two levels are not comparable
 	ErrIncomparable = errors.New("incomparable levels")
