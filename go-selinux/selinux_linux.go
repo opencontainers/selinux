@@ -607,17 +607,17 @@ func bitsetToStr(c *big.Int) string {
 	return str
 }
 
-func (l1 *level) equal(l2 *level) bool {
-	if l2 == nil || l1 == nil {
-		return l1 == l2
+func (l *level) equal(l2 *level) bool {
+	if l2 == nil || l == nil {
+		return l == l2
 	}
-	if l1.sens != l2.sens {
+	if l2.sens != l.sens {
 		return false
 	}
-	if l2.cats == nil || l1.cats == nil {
-		return l2.cats == l1.cats
+	if l2.cats == nil || l.cats == nil {
+		return l2.cats == l.cats
 	}
-	return l1.cats.Cmp(l2.cats) == 0
+	return l.cats.Cmp(l2.cats) == 0
 }
 
 // String returns an mlsRange as a string.
@@ -1046,7 +1046,7 @@ func chcon(fpath string, label string, recurse bool) error {
 		return nil
 	}
 
-	exclude_paths := map[string]bool{
+	excludePaths := map[string]bool{
 		"/":           true,
 		"/bin":        true,
 		"/boot":       true,
@@ -1074,19 +1074,19 @@ func chcon(fpath string, label string, recurse bool) error {
 	}
 
 	if home := os.Getenv("HOME"); home != "" {
-		exclude_paths[home] = true
+		excludePaths[home] = true
 	}
 
 	if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
 		if usr, err := user.Lookup(sudoUser); err == nil {
-			exclude_paths[usr.HomeDir] = true
+			excludePaths[usr.HomeDir] = true
 		}
 	}
 
 	if fpath != "/" {
 		fpath = strings.TrimSuffix(fpath, "/")
 	}
-	if exclude_paths[fpath] {
+	if excludePaths[fpath] {
 		return fmt.Errorf("SELinux relabeling of %s is not allowed", fpath)
 	}
 
