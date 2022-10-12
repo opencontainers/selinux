@@ -9,6 +9,7 @@ linters:
     - exportloopref # Detects pointers to enclosing loop variables.
     - gocritic      # Metalinter; detects bugs, performance, and styling issues.
     - gofumpt       # Detects whether code was gofumpt-ed.
+    - gosec         # Detects security problems.
     - misspell      # Detects commonly misspelled English words in comments.
     - nilerr        # Detects code that returns nil even if it checks that the error is not nil.
     - nolintlint    # Detects ill-formed or insufficient nolint directives.

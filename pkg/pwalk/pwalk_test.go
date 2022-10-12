@@ -212,6 +212,6 @@ func cbReadFile(path string, info os.FileInfo, _ error) error {
 }
 
 func cbRandomSleep(_ string, _ os.FileInfo, _ error) error {
-	time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
+	time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond) //nolint:gosec // ignore G404: Use of weak random number generator
 	return nil
 }
