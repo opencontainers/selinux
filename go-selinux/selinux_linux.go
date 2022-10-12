@@ -803,7 +803,7 @@ func setEnforceMode(mode int) error {
 }
 
 // defaultEnforceMode returns the systems default SELinux mode Enforcing,
-// Permissive or Disabled. Note this is is just the default at boot time.
+// Permissive or Disabled. Note this is just the default at boot time.
 // EnforceMode tells you the systems current mode.
 func defaultEnforceMode() int {
 	switch readConfig(selinuxTag) {
@@ -1035,7 +1035,7 @@ func copyLevel(src, dest string) (string, error) {
 	return tcon.Get(), nil
 }
 
-// chcon changes the fpath file object to the SELinux label label.
+// chcon changes the fpath file object to the SELinux label.
 // If fpath is a directory and recurse is true, then chcon walks the
 // directory tree setting the label.
 func chcon(fpath string, label string, recurse bool) error {

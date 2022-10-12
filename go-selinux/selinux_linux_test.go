@@ -186,6 +186,7 @@ func TestCanonicalizeContext(t *testing.T) {
 }
 
 func TestFindSELinuxfsInMountinfo(t *testing.T) {
+	//nolint:dupword // ignore duplicate words (sysfs sysfs)
 	const mountinfo = `18 62 0:17 / /sys rw,nosuid,nodev,noexec,relatime shared:6 - sysfs sysfs rw,seclabel
 19 62 0:3 / /proc rw,nosuid,nodev,noexec,relatime shared:5 - proc proc rw
 20 62 0:5 / /dev rw,nosuid shared:2 - devtmpfs devtmpfs rw,seclabel,size=3995472k,nr_inodes=998868,mode=755
