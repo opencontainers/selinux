@@ -138,31 +138,31 @@ func BenchmarkWalk(b *testing.B) {
 	)
 
 	benchmarks := []struct {
-		name string
 		walk fs.WalkDirFunc
+		name string
 	}{
-		{"Empty", cbEmpty},
-		{"ReadFile", cbReadFile},
-		{"ChownChmod", cbChownChmod},
-		{"RandomSleep", cbRandomSleep},
+		{name: "Empty", walk: cbEmpty},
+		{name: "ReadFile", walk: cbReadFile},
+		{name: "ChownChmod", walk: cbChownChmod},
+		{name: "RandomSleep", walk: cbRandomSleep},
 	}
 
 	walkers := []struct {
-		name   string
 		walker walkerFunc
+		name   string
 	}{
-		{"filepath.WalkDir", filepath.WalkDir},
-		{"pwalkdir.Walk", Walk},
+		{name: "filepath.WalkDir", walker: filepath.WalkDir},
+		{name: "pwalkdir.Walk", walker: Walk},
 		// test WalkN with various values of N
-		{"pwalkdir.Walk1", genWalkN(1)},
-		{"pwalkdir.Walk2", genWalkN(2)},
-		{"pwalkdir.Walk4", genWalkN(4)},
-		{"pwalkdir.Walk8", genWalkN(8)},
-		{"pwalkdir.Walk16", genWalkN(16)},
-		{"pwalkdir.Walk32", genWalkN(32)},
-		{"pwalkdir.Walk64", genWalkN(64)},
-		{"pwalkdir.Walk128", genWalkN(128)},
-		{"pwalkdir.Walk256", genWalkN(256)},
+		{name: "pwalkdir.Walk1", walker: genWalkN(1)},
+		{name: "pwalkdir.Walk2", walker: genWalkN(2)},
+		{name: "pwalkdir.Walk4", walker: genWalkN(4)},
+		{name: "pwalkdir.Walk8", walker: genWalkN(8)},
+		{name: "pwalkdir.Walk16", walker: genWalkN(16)},
+		{name: "pwalkdir.Walk32", walker: genWalkN(32)},
+		{name: "pwalkdir.Walk64", walker: genWalkN(64)},
+		{name: "pwalkdir.Walk128", walker: genWalkN(128)},
+		{name: "pwalkdir.Walk256", walker: genWalkN(256)},
 	}
 
 	dir, total, err := prepareTestSet(levels, dirs, files)
