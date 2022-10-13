@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/big"
 	"os"
 	"os/user"
@@ -17,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/opencontainers/selinux/pkg/pwalkdir"
 	"golang.org/x/sys/unix"
 )
 
@@ -1111,6 +1113,28 @@ func chcon(fpath string, label string, recurse bool) error {
 	}
 
 	return rchcon(fpath, label)
+}
+
+func rchcon(fpath, label string) error { //revive:disable:cognitive-complexity
+	fastMode := false
+	// If the current label matches the new label, assume
+	// other labels are correct.
+	if cLabel, err := lFileLabel(fpath); err == nil && cLabel == label {
+		fastMode = true
+	}
+	return pwalkdir.Walk(fpath, func(p string, _ fs.DirEntry, _ error) error {
+		if fastMode {
+			if cLabel, err := lFileLabel(fpath); err == nil && cLabel == label {
+				return nil
+			}
+		}
+		err := lSetFileLabel(p, label)
+		// Walk a file tree can race with removal, so ignore ENOENT.
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	})
 }
 
 // dupSecOpt takes an SELinux process label and returns security options that
