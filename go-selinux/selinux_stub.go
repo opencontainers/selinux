@@ -10,6 +10,7 @@ func attrPath(string) string {
 func readCon(fpath string) (string, error) {
 	return "", nil
 }
+
 func writeCon(string, string) error {
 	return nil
 }
