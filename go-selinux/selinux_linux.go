@@ -35,17 +35,17 @@ const (
 )
 
 type selinuxState struct {
+	mcsList       map[string]bool
+	selinuxfs     string
+	selinuxfsOnce sync.Once
 	enabledSet    bool
 	enabled       bool
-	selinuxfsOnce sync.Once
-	selinuxfs     string
-	mcsList       map[string]bool
 	sync.Mutex
 }
 
 type level struct {
-	sens uint
 	cats *big.Int
+	sens uint
 }
 
 type mlsRange struct {
@@ -54,10 +54,10 @@ type mlsRange struct {
 }
 
 type defaultSECtx struct {
-	user, level, scon   string
-	userRdr, defaultRdr io.Reader
-
-	verifier func(string) error
+	userRdr           io.Reader
+	verifier          func(string) error
+	defaultRdr        io.Reader
+	user, level, scon string
 }
 
 type levelItem byte

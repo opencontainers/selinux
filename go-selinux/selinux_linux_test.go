@@ -308,10 +308,10 @@ func TestComputeCreateContext(t *testing.T) {
 
 func TestGlbLub(t *testing.T) {
 	tests := []struct {
+		expectedErr   error
 		sourceRange   string
 		targetRange   string
 		expectedRange string
-		expectedErr   error
 	}{
 		{
 			sourceRange:   "s0:c0.c100-s10:c0.c150",
