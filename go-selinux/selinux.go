@@ -213,6 +213,11 @@ func ReserveLabel(label string) {
 	reserveLabel(label)
 }
 
+// MLSEnabled checks if MLS is enabled.
+func MLSEnabled() bool {
+	return isMLSEnabled()
+}
+
 // EnforceMode returns the current SELinux mode Enforcing, Permissive, Disabled
 func EnforceMode() int {
 	return enforceMode()

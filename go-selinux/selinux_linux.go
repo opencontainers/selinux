@@ -781,6 +781,15 @@ func selinuxEnforcePath() string {
 	return filepath.Join(getSelinuxMountPoint(), "enforce")
 }
 
+// isMLSEnabled checks if MLS is enabled.
+func isMLSEnabled() bool {
+	enabledB, err := os.ReadFile(filepath.Join(getSelinuxMountPoint(), "mls"))
+	if err != nil {
+		return false
+	}
+	return bytes.Equal(enabledB, []byte{'1'})
+}
+
 // enforceMode returns the current SELinux mode Enforcing, Permissive, Disabled
 func enforceMode() int {
 	var enforce int
