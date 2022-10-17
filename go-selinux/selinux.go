@@ -23,8 +23,13 @@ var (
 	// ErrEmptyPath is returned when an empty path has been specified.
 	ErrEmptyPath = errors.New("empty path")
 
+	// ErrInvalidLabel is returned when an invalid label is specified.
+	ErrInvalidLabel = errors.New("invalid Label")
+
 	// InvalidLabel is returned when an invalid label is specified.
-	InvalidLabel = errors.New("Invalid Label")
+	//
+	// Deprecated: use [ErrInvalidLabel].
+	InvalidLabel = ErrInvalidLabel
 
 	// ErrIncomparable is returned two levels are not comparable
 	ErrIncomparable = errors.New("incomparable levels")
@@ -158,7 +163,7 @@ func SetTaskLabel(label string) error {
 // SetSocketLabel takes a process label and tells the kernel to assign the
 // label to the next socket that gets created. Calls to SetSocketLabel
 // should be wrapped in runtime.LockOSThread()/runtime.UnlockOSThread() until
-// the the socket is created to guarantee another goroutine does not migrate
+// the socket is created to guarantee another goroutine does not migrate
 // to the current thread before execution is complete.
 func SetSocketLabel(label string) error {
 	return writeCon(attrPath("sockcreate"), label)
@@ -220,7 +225,7 @@ func SetEnforceMode(mode int) error {
 }
 
 // DefaultEnforceMode returns the systems default SELinux mode Enforcing,
-// Permissive or Disabled. Note this is is just the default at boot time.
+// Permissive or Disabled. Note this is just the default at boot time.
 // EnforceMode tells you the systems current mode.
 func DefaultEnforceMode() int {
 	return defaultEnforceMode()
@@ -266,7 +271,7 @@ func CopyLevel(src, dest string) (string, error) {
 	return copyLevel(src, dest)
 }
 
-// Chcon changes the fpath file object to the SELinux label label.
+// Chcon changes the fpath file object to the SELinux label.
 // If fpath is a directory and recurse is true, then Chcon walks the
 // directory tree setting the label.
 //

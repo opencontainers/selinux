@@ -75,11 +75,12 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error)
 		}
 		count++
 		for f := 0; f < files; f++ {
-			fi, err := os.CreateTemp(dir, "f-")
+			var fi *os.File
+			fi, err = os.CreateTemp(dir, "f-")
 			if err != nil {
 				return count, err
 			}
-			fi.Close()
+			_ = fi.Close()
 			count++
 		}
 		if levels == 0 {
@@ -133,31 +134,31 @@ func BenchmarkWalk(b *testing.B) {
 	)
 
 	benchmarks := []struct {
-		name string
 		walk filepath.WalkFunc
+		name string
 	}{
-		{"Empty", cbEmpty},
-		{"ReadFile", cbReadFile},
-		{"ChownChmod", cbChownChmod},
-		{"RandomSleep", cbRandomSleep},
+		{name: "Empty", walk: cbEmpty},
+		{name: "ReadFile", walk: cbReadFile},
+		{name: "ChownChmod", walk: cbChownChmod},
+		{name: "RandomSleep", walk: cbRandomSleep},
 	}
 
 	walkers := []struct {
-		name   string
 		walker walkerFunc
+		name   string
 	}{
-		{"filepath.Walk", filepath.Walk},
-		{"pwalk.Walk", Walk},
+		{name: "filepath.Walk", walker: filepath.Walk},
+		{name: "pwalk.Walk", walker: Walk},
 		// test WalkN with various values of N
-		{"pwalk.Walk1", genWalkN(1)},
-		{"pwalk.Walk2", genWalkN(2)},
-		{"pwalk.Walk4", genWalkN(4)},
-		{"pwalk.Walk8", genWalkN(8)},
-		{"pwalk.Walk16", genWalkN(16)},
-		{"pwalk.Walk32", genWalkN(32)},
-		{"pwalk.Walk64", genWalkN(64)},
-		{"pwalk.Walk128", genWalkN(128)},
-		{"pwalk.Walk256", genWalkN(256)},
+		{name: "pwalk.Walk1", walker: genWalkN(1)},
+		{name: "pwalk.Walk2", walker: genWalkN(2)},
+		{name: "pwalk.Walk4", walker: genWalkN(4)},
+		{name: "pwalk.Walk8", walker: genWalkN(8)},
+		{name: "pwalk.Walk16", walker: genWalkN(16)},
+		{name: "pwalk.Walk32", walker: genWalkN(32)},
+		{name: "pwalk.Walk64", walker: genWalkN(64)},
+		{name: "pwalk.Walk128", walker: genWalkN(128)},
+		{name: "pwalk.Walk256", walker: genWalkN(256)},
 	}
 
 	dir, total, err := prepareTestSet(levels, dirs, files)
@@ -172,15 +173,13 @@ func BenchmarkWalk(b *testing.B) {
 			walker := w.walker
 			walkFn := bm.walk
 			// preheat
-			err := w.walker(dir, bm.walk)
-			if err != nil {
+			if err := w.walker(dir, bm.walk); err != nil {
 				b.Errorf("walk failed: %v", err)
 			}
 			// benchmark
 			b.Run(bm.name+"/"+w.name, func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					err := walker(dir, walkFn)
-					if err != nil {
+					if err := walker(dir, walkFn); err != nil {
 						b.Errorf("walk failed: %v", err)
 					}
 				}
@@ -213,6 +212,6 @@ func cbReadFile(path string, info os.FileInfo, _ error) error {
 }
 
 func cbRandomSleep(_ string, _ os.FileInfo, _ error) error {
-	time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
+	time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond) //nolint:gosec // ignore G404: Use of weak random number generator
 	return nil
 }

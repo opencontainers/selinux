@@ -35,17 +35,17 @@ const (
 )
 
 type selinuxState struct {
+	mcsList       map[string]bool
+	selinuxfs     string
+	selinuxfsOnce sync.Once
 	enabledSet    bool
 	enabled       bool
-	selinuxfsOnce sync.Once
-	selinuxfs     string
-	mcsList       map[string]bool
 	sync.Mutex
 }
 
 type level struct {
-	sens uint
 	cats *big.Int
+	sens uint
 }
 
 type mlsRange struct {
@@ -54,10 +54,10 @@ type mlsRange struct {
 }
 
 type defaultSECtx struct {
-	user, level, scon   string
-	userRdr, defaultRdr io.Reader
-
-	verifier func(string) error
+	userRdr           io.Reader
+	verifier          func(string) error
+	defaultRdr        io.Reader
+	user, level, scon string
 }
 
 type levelItem byte
@@ -607,17 +607,17 @@ func bitsetToStr(c *big.Int) string {
 	return str
 }
 
-func (l1 *level) equal(l2 *level) bool {
-	if l2 == nil || l1 == nil {
-		return l1 == l2
+func (l *level) equal(l2 *level) bool {
+	if l2 == nil || l == nil {
+		return l == l2
 	}
-	if l1.sens != l2.sens {
+	if l2.sens != l.sens {
 		return false
 	}
-	if l2.cats == nil || l1.cats == nil {
-		return l2.cats == l1.cats
+	if l2.cats == nil || l.cats == nil {
+		return l2.cats == l.cats
 	}
-	return l1.cats.Cmp(l2.cats) == 0
+	return l.cats.Cmp(l2.cats) == 0
 }
 
 // String returns an mlsRange as a string.
@@ -748,7 +748,7 @@ func newContext(label string) (Context, error) {
 	if len(label) != 0 {
 		con := strings.SplitN(label, ":", 4)
 		if len(con) < 3 {
-			return c, InvalidLabel
+			return c, ErrInvalidLabel
 		}
 		c["user"] = con[0]
 		c["role"] = con[1]
@@ -799,11 +799,12 @@ func enforceMode() int {
 // setEnforceMode sets the current SELinux mode Enforcing, Permissive.
 // Disabled is not valid, since this needs to be set at boot time.
 func setEnforceMode(mode int) error {
+	//nolint:gosec // ignore G306: permissions to be 0600 or less.
 	return os.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0o644)
 }
 
 // defaultEnforceMode returns the systems default SELinux mode Enforcing,
-// Permissive or Disabled. Note this is is just the default at boot time.
+// Permissive or Disabled. Note this is just the default at boot time.
 // EnforceMode tells you the systems current mode.
 func defaultEnforceMode() int {
 	switch readConfig(selinuxTag) {
@@ -1006,6 +1007,7 @@ func addMcs(processLabel, fileLabel string) (string, string) {
 
 // securityCheckContext validates that the SELinux label is understood by the kernel
 func securityCheckContext(val string) error {
+	//nolint:gosec // ignore G306: permissions to be 0600 or less.
 	return os.WriteFile(filepath.Join(getSelinuxMountPoint(), "context"), []byte(val), 0o644)
 }
 
@@ -1035,7 +1037,7 @@ func copyLevel(src, dest string) (string, error) {
 	return tcon.Get(), nil
 }
 
-// chcon changes the fpath file object to the SELinux label label.
+// chcon changes the fpath file object to the SELinux label.
 // If fpath is a directory and recurse is true, then chcon walks the
 // directory tree setting the label.
 func chcon(fpath string, label string, recurse bool) error {
@@ -1046,7 +1048,7 @@ func chcon(fpath string, label string, recurse bool) error {
 		return nil
 	}
 
-	exclude_paths := map[string]bool{
+	excludePaths := map[string]bool{
 		"/":           true,
 		"/bin":        true,
 		"/boot":       true,
@@ -1074,19 +1076,19 @@ func chcon(fpath string, label string, recurse bool) error {
 	}
 
 	if home := os.Getenv("HOME"); home != "" {
-		exclude_paths[home] = true
+		excludePaths[home] = true
 	}
 
 	if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
 		if usr, err := user.Lookup(sudoUser); err == nil {
-			exclude_paths[usr.HomeDir] = true
+			excludePaths[usr.HomeDir] = true
 		}
 	}
 
 	if fpath != "/" {
 		fpath = strings.TrimSuffix(fpath, "/")
 	}
-	if exclude_paths[fpath] {
+	if excludePaths[fpath] {
 		return fmt.Errorf("SELinux relabeling of %s is not allowed", fpath)
 	}
 
