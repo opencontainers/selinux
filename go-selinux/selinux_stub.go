@@ -95,6 +95,10 @@ func clearLabels() {
 func reserveLabel(label string) {
 }
 
+func isMLSEnabled() bool {
+	return false
+}
+
 func enforceMode() int {
 	return Disabled
 }
