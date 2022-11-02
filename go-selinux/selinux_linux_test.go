@@ -16,24 +16,65 @@ func TestSetFileLabel(t *testing.T) {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
-	tmp := "selinux_test"
-	con := "system_u:object_r:bin_t:s0"
-	out, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE, 0)
+	const (
+		tmpFile = "selinux_test"
+		tmpLink = "selinux_test_link"
+		con     = "system_u:object_r:bin_t:s0:c1,c2"
+		con2    = "system_u:object_r:bin_t:s0:c3,c4"
+	)
+
+	_ = os.Remove(tmpFile)
+	out, err := os.OpenFile(tmpFile, os.O_WRONLY|os.O_CREATE, 0)
 	if err != nil {
-		t.Fatalf("unable to open %s: %s", tmp, err)
+		t.Fatal(err)
 	}
 	out.Close()
-	defer os.Remove(tmp)
+	defer os.Remove(tmpFile)
 
-	if err := SetFileLabel(tmp, con); err != nil {
+	_ = os.Remove(tmpLink)
+	if err := os.Symlink(tmpFile, tmpLink); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpLink)
+
+	if err := SetFileLabel(tmpLink, con); err != nil {
 		t.Fatalf("SetFileLabel failed: %s", err)
 	}
-	filelabel, err := FileLabel(tmp)
+	filelabel, err := FileLabel(tmpLink)
 	if err != nil {
 		t.Fatalf("FileLabel failed: %s", err)
 	}
-	if con != filelabel {
+	if filelabel != con {
 		t.Fatalf("FileLabel failed, returned %s expected %s", filelabel, con)
+	}
+
+	// Using LfileLabel to verify that the symlink itself is not labeled.
+	linkLabel, err := LfileLabel(tmpLink)
+	if err != nil {
+		t.Fatalf("LfileLabel failed: %s", err)
+	}
+	if linkLabel == con {
+		t.Fatalf("Label on symlink should not be set, got: %q", linkLabel)
+	}
+
+	// Use LsetFileLabel to set a label on the symlink itself.
+	if err := LsetFileLabel(tmpLink, con2); err != nil {
+		t.Fatalf("LsetFileLabel failed: %s", err)
+	}
+	filelabel, err = FileLabel(tmpFile)
+	if err != nil {
+		t.Fatalf("FileLabel failed: %s", err)
+	}
+	if filelabel != con {
+		t.Fatalf("FileLabel was updated, returned %s expected %s", filelabel, con)
+	}
+
+	linkLabel, err = LfileLabel(tmpLink)
+	if err != nil {
+		t.Fatalf("LfileLabel failed: %s", err)
+	}
+	if linkLabel != con2 {
+		t.Fatalf("LfileLabel failed: returned %s expected %s", linkLabel, con2)
 	}
 }
 

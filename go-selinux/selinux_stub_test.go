@@ -23,6 +23,13 @@ func TestSELinuxStubs(t *testing.T) {
 		t.Error(err)
 	}
 
+	if _, err := LfileLabel(tmpDir); err != nil {
+		t.Error(err)
+	}
+	if err := LsetFileLabel(tmpDir, testLabel); err != nil {
+		t.Error(err)
+	}
+
 	if err := SetFSCreateLabel(testLabel); err != nil {
 		t.Error(err)
 	}
