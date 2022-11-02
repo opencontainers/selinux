@@ -14,11 +14,12 @@ func TestSELinuxStubs(t *testing.T) {
 		t.Error("SELinux enabled on non-linux.")
 	}
 
-	if _, err := FileLabel("/etc"); err != nil {
+	tmpDir := t.TempDir()
+	if _, err := FileLabel(tmpDir); err != nil {
 		t.Error(err)
 	}
 
-	if err := SetFileLabel("/etc", testLabel); err != nil {
+	if err := SetFileLabel(tmpDir, testLabel); err != nil {
 		t.Error(err)
 	}
 
