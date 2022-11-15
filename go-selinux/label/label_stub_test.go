@@ -79,11 +79,12 @@ func TestCheckLabelCompile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := FileLabel("/etc"); err != nil {
+	tmpDir := t.TempDir()
+	if _, err := FileLabel(tmpDir); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := SetFileLabel("/etc", "foobar"); err != nil {
+	if err := SetFileLabel(tmpDir, "foobar"); err != nil {
 		t.Fatal(err)
 	}
 
