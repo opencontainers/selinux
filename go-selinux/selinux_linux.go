@@ -1134,7 +1134,7 @@ func rchcon(fpath, label string) error { //revive:disable:cognitive-complexity
 	}
 	return pwalkdir.Walk(fpath, func(p string, _ fs.DirEntry, _ error) error {
 		if fastMode {
-			if cLabel, err := lFileLabel(fpath); err == nil && cLabel == label {
+			if cLabel, err := lFileLabel(p); err == nil && cLabel == label {
 				return nil
 			}
 		}
