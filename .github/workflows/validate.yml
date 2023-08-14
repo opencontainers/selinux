@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.x
+          go-version: 1.21.x
       - uses: golangci/golangci-lint-action@v3
         with:
           version: v1.51
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.x
+          go-version: 1.21.x
       - uses: golangci/golangci-lint-action@v3
         with:
           version: v1.51
@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.19.x, 1.20.x]
+        go-version: [1.19.x, 1.20.x, 1.21.x]
         race: ["-race", ""]
     runs-on: ubuntu-20.04
     steps:
