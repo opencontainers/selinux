@@ -36,7 +36,7 @@ jobs:
           go-version: 1.21.x
       - uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.51
+          version: v1.54
 
   cross:
     runs-on: ubuntu-20.04
@@ -54,7 +54,7 @@ jobs:
           go-version: 1.21.x
       - uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.51
+          version: v1.54
       - name: test-stubs
         run: make test
 
