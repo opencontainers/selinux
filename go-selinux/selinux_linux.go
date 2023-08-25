@@ -132,7 +132,7 @@ func verifySELinuxfsMount(mnt string) bool {
 		if err == nil {
 			break
 		}
-		if err == unix.EAGAIN || err == unix.EINTR { //nolint:errorlint // unix errors are bare
+		if err == unix.EAGAIN || err == unix.EINTR {
 			continue
 		}
 		return false
@@ -263,7 +263,7 @@ func isProcHandle(fh *os.File) error {
 		if err == nil {
 			break
 		}
-		if err != unix.EINTR { //nolint:errorlint // unix errors are bare
+		if err != unix.EINTR {
 			return &os.PathError{Op: "fstatfs", Path: fh.Name(), Err: err}
 		}
 	}
@@ -328,7 +328,7 @@ func lSetFileLabel(fpath string, label string) error {
 		if err == nil {
 			break
 		}
-		if err != unix.EINTR { //nolint:errorlint // unix errors are bare
+		if err != unix.EINTR {
 			return &os.PathError{Op: "lsetxattr", Path: fpath, Err: err}
 		}
 	}
@@ -347,7 +347,7 @@ func setFileLabel(fpath string, label string) error {
 		if err == nil {
 			break
 		}
-		if err != unix.EINTR { //nolint:errorlint // unix errors are bare
+		if err != unix.EINTR {
 			return &os.PathError{Op: "setxattr", Path: fpath, Err: err}
 		}
 	}
