@@ -33,12 +33,44 @@ func TestWalkDir(t *testing.T) {
 		t.Errorf("File count mismatch: found %d, expected %d", count, total)
 	}
 
-	t.Logf("concurrency: %d, files found: %d\n", concurrency, count)
+	t.Logf("concurrency: %d, files found: %d", concurrency, count)
+}
+
+func TestWalkDirTopLevelErrNotExistNotIgnored(t *testing.T) {
+	err := WalkN("non-existent-directory", cbEmpty, 8)
+	if err == nil {
+		t.Fatal("expected ErrNotExist, got nil")
+	}
+}
+
+// https://github.com/opencontainers/selinux/issues/199
+func TestWalkDirRaceWithRemoval(t *testing.T) {
+	var count uint32
+	concurrency := runtime.NumCPU() * 2
+	// This test is still on a best-effort basis, meaning it can still pass
+	// when there is a bug in the code, but the larger the test set is, the
+	// higher the probability that this test fails (without a fix).
+	//
+	// With this set (4, 5, 6), and the fix commented out, it fails
+	// about 90 out of 100 runs on my machine.
+	dir, total := prepareTestSet(t, 4, 5, 6)
+
+	// Make walk race with removal.
+	go os.RemoveAll(dir)
+	err := WalkN(dir,
+		func(_ string, _ fs.DirEntry, _ error) error {
+			atomic.AddUint32(&count, 1)
+			return nil
+		},
+		concurrency)
+	t.Logf("found %d of %d files", count, total)
+	if err != nil {
+		t.Fatalf("expected nil, got %v", err)
+	}
 }
 
 func TestWalkDirManyErrors(t *testing.T) {
 	var count uint32
-
 	dir, total := prepareTestSet(t, 3, 3, 2)
 
 	max := uint32(total / 2)

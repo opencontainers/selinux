@@ -28,7 +28,9 @@ Please note the following limitations of this code:
 
   * fs.SkipDir is not supported;
 
-  * no errors are ever passed to WalkDirFunc;
+  * ErrNotExist errors from filepath.WalkDir are silently ignored for any path
+    except the top directory (WalkDir argument); any other error is returned to
+    the caller of WalkDir;
 
   * once any error is returned from any walkDirFunc instance, no more calls
     to WalkDirFunc are made, and the error is returned to the caller of WalkDir;
