@@ -18,20 +18,14 @@ import (
 func TestWalkDir(t *testing.T) {
 	var count uint32
 	concurrency := runtime.NumCPU() * 2
+	dir, total := prepareTestSet(t, 3, 2, 1)
 
-	dir, total, err := prepareTestSet(3, 2, 1)
-	if err != nil {
-		t.Fatalf("dataset creation failed: %v", err)
-	}
-	defer os.RemoveAll(dir)
-
-	err = WalkN(dir,
+	err := WalkN(dir,
 		func(_ string, _ fs.DirEntry, _ error) error {
 			atomic.AddUint32(&count, 1)
 			return nil
 		},
 		concurrency)
-
 	if err != nil {
 		t.Errorf("Walk failed: %v", err)
 	}
@@ -45,15 +39,11 @@ func TestWalkDir(t *testing.T) {
 func TestWalkDirManyErrors(t *testing.T) {
 	var count uint32
 
-	dir, total, err := prepareTestSet(3, 3, 2)
-	if err != nil {
-		t.Fatalf("dataset creation failed: %v", err)
-	}
-	defer os.RemoveAll(dir)
+	dir, total := prepareTestSet(t, 3, 3, 2)
 
 	max := uint32(total / 2)
 	e42 := errors.New("42")
-	err = Walk(dir,
+	err := Walk(dir,
 		func(p string, e fs.DirEntry, _ error) error {
 			if atomic.AddUint32(&count, 1) > max {
 				return e42
@@ -105,17 +95,22 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error)
 //
 // Total dirs: dirs^levels + dirs^(levels-1) + ... + dirs^1
 // Total files: total_dirs * files
-func prepareTestSet(levels, dirs, files int) (dir string, total int, err error) {
+func prepareTestSet(tb testing.TB, levels, dirs, files int) (dir string, total int) {
+	tb.Helper()
+	var err error
+
 	dir, err = os.MkdirTemp(".", "pwalk-test-")
 	if err != nil {
-		return
+		tb.Fatal(err)
 	}
+	tb.Cleanup(func() {
+		if err := os.RemoveAll(dir); err != nil && !errors.Is(err, os.ErrNotExist) {
+			tb.Errorf("cleanup error: %v", err)
+		}
+	})
 	total, err = makeManyDirs(dir, levels, dirs, files)
-	if err != nil && total > 0 {
-		_ = os.RemoveAll(dir)
-		dir = ""
-		total = 0
-		return
+	if err != nil {
+		tb.Fatal(err)
 	}
 	total++ // this dir
 
@@ -165,11 +160,7 @@ func BenchmarkWalk(b *testing.B) {
 		{name: "pwalkdir.Walk256", walker: genWalkN(256)},
 	}
 
-	dir, total, err := prepareTestSet(levels, dirs, files)
-	if err != nil {
-		b.Fatalf("dataset creation failed: %v", err)
-	}
-	defer os.RemoveAll(dir)
+	dir, total := prepareTestSet(b, levels, dirs, files)
 	b.Logf("dataset: %d levels x %d dirs x %d files, total entries: %d", levels, dirs, files, total)
 
 	for _, bm := range benchmarks {
