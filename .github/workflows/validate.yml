@@ -39,6 +39,16 @@ jobs:
         with:
           version: v1.54
 
+  codespell:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: install deps
+      # Version of codespell bundled with Ubuntu is way old, so use pip.
+      run: pip install codespell
+    - name: run codespell
+      run: codespell
+
   cross:
     runs-on: ubuntu-20.04
     steps:
