@@ -25,7 +25,7 @@ build-cross:
 
 .PHONY: test
 test:
-	go test -timeout 3m ${TESTFLAGS} -v ./...
+	$(GO) test -timeout 3m ${TESTFLAGS} -v ./...
 
 .PHONY: lint
 lint:

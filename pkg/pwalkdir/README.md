@@ -51,4 +51,4 @@ filepath.WalkDir.
 Otherwise (if a WalkDirFunc is actually doing something) this is usually
 faster, except when the WalkDirN(..., 1) is used. Run `go test -bench .`
 to see how different operations can benefit from it, as well as how the
-level of paralellism affects the speed.
+level of parallelism affects the speed.

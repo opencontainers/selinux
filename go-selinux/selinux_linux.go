@@ -639,6 +639,7 @@ func (m mlsRange) String() string {
 	return low + "-" + high
 }
 
+// TODO: remove min and max once Go < 1.21 is not supported.
 func max(a, b uint) uint {
 	if a > b {
 		return a
