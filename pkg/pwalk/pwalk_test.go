@@ -15,19 +15,14 @@ func TestWalk(t *testing.T) {
 	var count uint32
 	concurrency := runtime.NumCPU() * 2
 
-	dir, total, err := prepareTestSet(3, 2, 1)
-	if err != nil {
-		t.Fatalf("dataset creation failed: %v", err)
-	}
-	defer os.RemoveAll(dir)
+	dir, total := prepareTestSet(t, 3, 2, 1)
 
-	err = WalkN(dir,
+	err := WalkN(dir,
 		func(_ string, _ os.FileInfo, _ error) error {
 			atomic.AddUint32(&count, 1)
 			return nil
 		},
 		concurrency)
-
 	if err != nil {
 		t.Errorf("Walk failed: %v", err)
 	}
@@ -35,21 +30,49 @@ func TestWalk(t *testing.T) {
 		t.Errorf("File count mismatch: found %d, expected %d", count, total)
 	}
 
-	t.Logf("concurrency: %d, files found: %d\n", concurrency, count)
+	t.Logf("concurrency: %d, files found: %d", concurrency, count)
 }
 
-func TestWalkManyErrors(t *testing.T) {
+func TestWalkTopLevelErrNotExistNotIgnored(t *testing.T) {
+	if WalkN("non-existent-directory", cbEmpty, 8) == nil {
+		t.Fatal("expected ErrNotExist, got nil")
+	}
+}
+
+// https://github.com/opencontainers/selinux/issues/199
+func TestWalkRaceWithRemoval(t *testing.T) {
+	var count uint32
+	concurrency := runtime.NumCPU() * 2
+	// This test is still on a best-effort basis, meaning it can still pass
+	// when there is a bug in the code, but the larger the test set is, the
+	// higher the probability that this test fails (without a fix).
+	//
+	// With this set (4, 5, 6), and the fix commented out, it fails
+	// 100 out of 100 runs on my machine.
+	dir, total := prepareTestSet(t, 4, 5, 6)
+
+	// Race walk with removal.
+	go os.RemoveAll(dir)
+	err := WalkN(dir,
+		func(_ string, _ os.FileInfo, _ error) error {
+			atomic.AddUint32(&count, 1)
+			return nil
+		},
+		concurrency)
+	t.Logf("found %d of %d files", count, total)
+	if err != nil {
+		t.Fatalf("expected nil, got %v", err)
+	}
+}
+
+func TestWalkDirManyErrors(t *testing.T) {
 	var count uint32
 
-	dir, total, err := prepareTestSet(3, 3, 2)
-	if err != nil {
-		t.Fatalf("dataset creation failed: %v", err)
-	}
-	defer os.RemoveAll(dir)
+	dir, total := prepareTestSet(t, 3, 3, 2)
 
 	max := uint32(total / 2)
 	e42 := errors.New("42")
-	err = Walk(dir,
+	err := Walk(dir,
 		func(p string, i os.FileInfo, _ error) error {
 			if atomic.AddUint32(&count, 1) > max {
 				return e42
@@ -101,17 +124,22 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error)
 //
 // Total dirs: dirs^levels + dirs^(levels-1) + ... + dirs^1
 // Total files: total_dirs * files
-func prepareTestSet(levels, dirs, files int) (dir string, total int, err error) {
+func prepareTestSet(tb testing.TB, levels, dirs, files int) (dir string, total int) {
+	tb.Helper()
+	var err error
+
 	dir, err = os.MkdirTemp(".", "pwalk-test-")
 	if err != nil {
-		return
+		tb.Fatal(err)
 	}
+	tb.Cleanup(func() {
+		if err := os.RemoveAll(dir); err != nil && !errors.Is(err, os.ErrNotExist) {
+			tb.Errorf("cleanup error: %v", err)
+		}
+	})
 	total, err = makeManyDirs(dir, levels, dirs, files)
-	if err != nil && total > 0 {
-		_ = os.RemoveAll(dir)
-		dir = ""
-		total = 0
-		return
+	if err != nil {
+		tb.Fatal(err)
 	}
 	total++ // this dir
 
@@ -161,11 +189,7 @@ func BenchmarkWalk(b *testing.B) {
 		{name: "pwalk.Walk256", walker: genWalkN(256)},
 	}
 
-	dir, total, err := prepareTestSet(levels, dirs, files)
-	if err != nil {
-		b.Fatalf("dataset creation failed: %v", err)
-	}
-	defer os.RemoveAll(dir)
+	dir, total := prepareTestSet(b, levels, dirs, files)
 	b.Logf("dataset: %d levels x %d dirs x %d files, total entries: %d", levels, dirs, files, total)
 
 	for _, bm := range benchmarks {
