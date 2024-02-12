@@ -21,7 +21,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: check subject line length
-        uses: tim-actions/commit-message-checker-with-regex@v0.3.1
+        uses: tim-actions/commit-message-checker-with-regex@v0.3.2
         with:
           commits: ${{ steps.get-pr-commits.outputs.commits }}
           pattern: '^.{0,72}(\n.*)*$'
@@ -30,19 +30,19 @@ jobs:
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
           cache: false # golangci-lint-action does its own caching
-      - uses: golangci/golangci-lint-action@v3
+      - uses: golangci/golangci-lint-action@v4
         with:
           version: v1.56
 
   codespell:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: install deps
       # Version of codespell bundled with Ubuntu is way old, so use pip.
       run: pip install codespell
@@ -52,19 +52,19 @@ jobs:
   cross:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: cross
         run: make build-cross
 
   test-stubs:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
           cache: false # golangci-lint-action does its own caching
-      - uses: golangci/golangci-lint-action@v3
+      - uses: golangci/golangci-lint-action@v4
         with:
           version: v1.56
       - name: test-stubs
@@ -78,10 +78,10 @@ jobs:
         race: ["-race", ""]
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: install go ${{ matrix.go-version }}
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
 
