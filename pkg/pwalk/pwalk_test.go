@@ -73,7 +73,7 @@ func TestWalkDirManyErrors(t *testing.T) {
 	max := uint32(total / 2)
 	e42 := errors.New("42")
 	err := Walk(dir,
-		func(p string, i os.FileInfo, _ error) error {
+		func(_ string, _ os.FileInfo, _ error) error {
 			if atomic.AddUint32(&count, 1) > max {
 				return e42
 			}
