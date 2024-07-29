@@ -724,11 +724,11 @@ func peerLabel(fd uintptr) (string, error) {
 // setKeyLabel takes a process label and tells the kernel to assign the
 // label to the next kernel keyring that gets created
 func setKeyLabel(label string) error {
-	err := writeCon("/proc/self/attr/keycreate", label)
-	if errors.Is(err, os.ErrNotExist) {
+	if label == "" {
 		return nil
 	}
-	if label == "" && errors.Is(err, os.ErrPermission) {
+	err := writeCon("/proc/self/attr/keycreate", label)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
 	return err
