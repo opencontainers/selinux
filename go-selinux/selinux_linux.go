@@ -329,7 +329,7 @@ func lSetFileLabel(fpath string, label string) error {
 			break
 		}
 		if err != unix.EINTR {
-			return &os.PathError{Op: "lsetxattr", Path: fpath, Err: err}
+			return &os.PathError{Op: fmt.Sprintf("lsetxattr(label=%s)", label), Path: fpath, Err: err}
 		}
 	}
 
@@ -348,7 +348,7 @@ func setFileLabel(fpath string, label string) error {
 			break
 		}
 		if err != unix.EINTR {
-			return &os.PathError{Op: "setxattr", Path: fpath, Err: err}
+			return &os.PathError{Op: fmt.Sprintf("setxattr(label=%s)", label), Path: fpath, Err: err}
 		}
 	}
 
