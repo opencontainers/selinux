@@ -45,7 +45,7 @@ type selinuxState struct {
 
 type level struct {
 	cats *big.Int
-	sens uint
+	sens int
 }
 
 type mlsRange struct {
@@ -501,14 +501,14 @@ func catsToBitset(cats string) (*big.Int, error) {
 				return nil, err
 			}
 			for i := catstart; i <= catend; i++ {
-				bitset.SetBit(bitset, int(i), 1)
+				bitset.SetBit(bitset, i, 1)
 			}
 		} else {
 			cat, err := parseLevelItem(ranges[0], category)
 			if err != nil {
 				return nil, err
 			}
-			bitset.SetBit(bitset, int(cat), 1)
+			bitset.SetBit(bitset, cat, 1)
 		}
 	}
 
@@ -516,16 +516,17 @@ func catsToBitset(cats string) (*big.Int, error) {
 }
 
 // parseLevelItem parses and verifies that a sensitivity or category are valid
-func parseLevelItem(s string, sep levelItem) (uint, error) {
+func parseLevelItem(s string, sep levelItem) (int, error) {
 	if len(s) < minSensLen || levelItem(s[0]) != sep {
 		return 0, ErrLevelSyntax
 	}
-	val, err := strconv.ParseUint(s[1:], 10, 32)
+	const bitSize = 31 // Make sure the result fits into signed int32.
+	val, err := strconv.ParseUint(s[1:], 10, bitSize)
 	if err != nil {
 		return 0, err
 	}
 
-	return uint(val), nil
+	return int(val), nil //nolint:gosec
 }
 
 // parseLevel fills a level from a string that contains
@@ -622,7 +623,7 @@ func (l *level) equal(l2 *level) bool {
 
 // String returns an mlsRange as a string.
 func (m mlsRange) String() string {
-	low := "s" + strconv.Itoa(int(m.low.sens))
+	low := "s" + strconv.Itoa(m.low.sens)
 	if m.low.cats != nil && m.low.cats.BitLen() > 0 {
 		low += ":" + bitsetToStr(m.low.cats)
 	}
@@ -631,7 +632,7 @@ func (m mlsRange) String() string {
 		return low
 	}
 
-	high := "s" + strconv.Itoa(int(m.high.sens))
+	high := "s" + strconv.Itoa(m.high.sens)
 	if m.high.cats != nil && m.high.cats.BitLen() > 0 {
 		high += ":" + bitsetToStr(m.high.cats)
 	}
