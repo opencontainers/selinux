@@ -138,6 +138,7 @@ func verifySELinuxfsMount(mnt string) bool {
 		return false
 	}
 
+	//#nosec G115 -- there is no overflow here.
 	if uint32(buf.Type) != uint32(unix.SELINUX_MAGIC) {
 		return false
 	}
