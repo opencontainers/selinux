@@ -639,21 +639,6 @@ func (m mlsRange) String() string {
 	return low + "-" + high
 }
 
-// TODO: remove min and max once Go < 1.21 is not supported.
-func max(a, b uint) uint {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a, b uint) uint {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // calculateGlbLub computes the glb (greatest lower bound) and lub (least upper bound)
 // of a source and target range.
 // The glblub is calculated as the greater of the low sensitivities and
