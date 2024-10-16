@@ -10,7 +10,7 @@ on:
 jobs:
 
   commit:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     # Only check commits on pull requests.
     if: github.event_name == 'pull_request'
     steps:
@@ -28,7 +28,7 @@ jobs:
           error: 'Subject too long (max 72)'
 
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -40,7 +40,7 @@ jobs:
           version: v1.56
 
   codespell:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: install deps
@@ -50,7 +50,7 @@ jobs:
       run: codespell
 
   cross:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: cross
@@ -76,7 +76,7 @@ jobs:
       matrix:
         go-version: [1.21.x, 1.22.x]
         race: ["-race", ""]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
