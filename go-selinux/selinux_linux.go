@@ -583,7 +583,8 @@ func bitsetToStr(c *big.Int) string {
 	var str string
 
 	length := 0
-	for i := int(c.TrailingZeroBits()); i < c.BitLen(); i++ {
+	i0 := int(c.TrailingZeroBits()) //nolint:gosec
+	for i := i0; i < c.BitLen(); i++ {
 		if c.Bit(i) == 0 {
 			continue
 		}
