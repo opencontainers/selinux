@@ -126,3 +126,6 @@ jobs:
 
       - name: "make test"
         run: lima make -C /tmp/selinux test
+
+      - name: "32-bit test"
+        run: lima make -C /tmp/selinux GOARCH=386 test
