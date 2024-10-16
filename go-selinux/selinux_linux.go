@@ -584,7 +584,8 @@ func bitsetToStr(c *big.Int) string {
 	var str string
 
 	length := 0
-	for i := int(c.TrailingZeroBits()); i < c.BitLen(); i++ {
+	i0 := int(c.TrailingZeroBits()) //#nosec G115 -- don't expect TralingZeroBits to return values with highest bit set.
+	for i := i0; i < c.BitLen(); i++ {
 		if c.Bit(i) == 0 {
 			continue
 		}
