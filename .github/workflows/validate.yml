@@ -34,10 +34,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
-          cache: false # golangci-lint-action does its own caching
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56
+          version: v1.64
 
   codespell:
     runs-on: ubuntu-24.04
@@ -63,10 +62,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
-          cache: false # golangci-lint-action does its own caching
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56
+          version: v1.64
       - name: test-stubs
         run: make test
 
