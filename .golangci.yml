@@ -6,7 +6,6 @@ linters:
   enable:
     - dupword       # Detects duplicate words.
     - errorlint     # Detects code that may cause problems with Go 1.13 error wrapping.
-    - exportloopref # Detects pointers to enclosing loop variables.
     - gocritic      # Metalinter; detects bugs, performance, and styling issues.
     - gofumpt       # Detects whether code was gofumpt-ed.
     - gosec         # Detects security problems.
@@ -22,7 +21,6 @@ linters:
     - unconvert     # Detects unnecessary type conversions.
 linters-settings:
   govet:
-    check-shadowing: true
     enable-all: true
     settings:
       shadow:

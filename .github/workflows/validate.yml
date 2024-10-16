@@ -37,7 +37,7 @@ jobs:
           cache: false # golangci-lint-action does its own caching
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56
+          version: v1.61
 
   codespell:
     runs-on: ubuntu-22.04
@@ -66,7 +66,7 @@ jobs:
           cache: false # golangci-lint-action does its own caching
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56
+          version: v1.61
       - name: test-stubs
         run: make test
 
