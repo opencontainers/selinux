@@ -16,20 +16,21 @@ import (
 )
 
 func TestWalkDir(t *testing.T) {
-	var count uint32
+	var ac atomic.Uint32
 	concurrency := runtime.NumCPU() * 2
 	dir, total := prepareTestSet(t, 3, 2, 1)
 
 	err := WalkN(dir,
 		func(_ string, _ fs.DirEntry, _ error) error {
-			atomic.AddUint32(&count, 1)
+			ac.Add(1)
 			return nil
 		},
 		concurrency)
 	if err != nil {
 		t.Errorf("Walk failed: %v", err)
 	}
-	if count != uint32(total) {
+	count := ac.Load()
+	if count != total {
 		t.Errorf("File count mismatch: found %d, expected %d", count, total)
 	}
 
@@ -45,7 +46,7 @@ func TestWalkDirTopLevelErrNotExistNotIgnored(t *testing.T) {
 
 // https://github.com/opencontainers/selinux/issues/199
 func TestWalkDirRaceWithRemoval(t *testing.T) {
-	var count uint32
+	var ac atomic.Uint32
 	concurrency := runtime.NumCPU() * 2
 	// This test is still on a best-effort basis, meaning it can still pass
 	// when there is a bug in the code, but the larger the test set is, the
@@ -59,10 +60,11 @@ func TestWalkDirRaceWithRemoval(t *testing.T) {
 	go os.RemoveAll(dir)
 	err := WalkN(dir,
 		func(_ string, _ fs.DirEntry, _ error) error {
-			atomic.AddUint32(&count, 1)
+			ac.Add(1)
 			return nil
 		},
 		concurrency)
+	count := ac.Load()
 	t.Logf("found %d of %d files", count, total)
 	if err != nil {
 		t.Fatalf("expected nil, got %v", err)
@@ -70,29 +72,30 @@ func TestWalkDirRaceWithRemoval(t *testing.T) {
 }
 
 func TestWalkDirManyErrors(t *testing.T) {
-	var count uint32
+	var ac atomic.Uint32
 	dir, total := prepareTestSet(t, 3, 3, 2)
 
-	max := uint32(total / 2)
+	maxFiles := total / 2
 	e42 := errors.New("42")
 	err := Walk(dir,
 		func(_ string, _ fs.DirEntry, _ error) error {
-			if atomic.AddUint32(&count, 1) > max {
+			if ac.Add(1) > maxFiles {
 				return e42
 			}
 			return nil
 		})
+	count := ac.Load()
 	t.Logf("found %d of %d files", count, total)
 
 	if err == nil {
 		t.Error("Walk succeeded, but error is expected")
-		if count != uint32(total) {
+		if count != total {
 			t.Errorf("File count mismatch: found %d, expected %d", count, total)
 		}
 	}
 }
 
-func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error) {
+func makeManyDirs(prefix string, levels, dirs, files int) (count uint32, err error) {
 	for d := 0; d < dirs; d++ {
 		var dir string
 		dir, err = os.MkdirTemp(prefix, "d-")
@@ -112,7 +115,7 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error)
 		if levels == 0 {
 			continue
 		}
-		var c int
+		var c uint32
 		if c, err = makeManyDirs(dir, levels-1, dirs, files); err != nil {
 			return
 		}
@@ -127,7 +130,7 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count int, err error)
 //
 // Total dirs: dirs^levels + dirs^(levels-1) + ... + dirs^1
 // Total files: total_dirs * files
-func prepareTestSet(tb testing.TB, levels, dirs, files int) (dir string, total int) {
+func prepareTestSet(tb testing.TB, levels, dirs, files int) (dir string, total uint32) {
 	tb.Helper()
 	var err error
 

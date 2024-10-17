@@ -10,7 +10,7 @@ on:
 jobs:
 
   commit:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     # Only check commits on pull requests.
     if: github.event_name == 'pull_request'
     steps:
@@ -28,16 +28,15 @@ jobs:
           error: 'Subject too long (max 72)'
 
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
-          cache: false # golangci-lint-action does its own caching
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56
+          version: v1.61
 
   codespell:
     runs-on: ubuntu-22.04
@@ -50,7 +49,7 @@ jobs:
       run: codespell
 
   cross:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: cross
@@ -63,10 +62,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
-          cache: false # golangci-lint-action does its own caching
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56
+          version: v1.61
       - name: test-stubs
         run: make test
 
@@ -74,9 +72,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.21.x, 1.22.x]
+        go-version: [1.21.x, 1.22.x, 1.23.x]
         race: ["-race", ""]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -88,5 +86,29 @@ jobs:
       - name: build
         run: make BUILDFLAGS="${{ matrix.race }}" build
 
+      - name: enable selinux
+        run: |
+          sudo systemctl stop apparmor
+          sudo systemctl disable apparmor
+          sudo apt update
+          sudo apt install -y policycoreutils selinux-basics selinux-utils
+          sudo selinux-activate
+
       - name: test
         run: make TESTFLAGS="${{ matrix.race }}" test
+
+      - name: test 32-bit
+        if: ${{ matrix.race }} == "" # -race is not supported on linux/386
+        run: make GOARCH=386 test
+
+  all-done:
+    needs:
+      - commit
+      - lint
+      - codespell
+      - cross
+      - test-stubs
+      - test
+    runs-on: ubuntu-22.04
+    steps:
+    - run: echo "All jobs completed"
