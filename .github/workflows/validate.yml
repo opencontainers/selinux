@@ -92,3 +92,15 @@ jobs:
       - name: test 32-bit
         if: ${{ matrix.race }} == "" # -race is not supported on linux/386
         run: make GOARCH=386 test
+
+  all-done:
+    needs:
+      - commit
+      - lint
+      - codespell
+      - cross
+      - test-stubs
+      - test
+    runs-on: ubuntu-22.04
+    steps:
+    - run: echo "All jobs completed"
