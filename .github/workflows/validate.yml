@@ -129,3 +129,16 @@ jobs:
 
       - name: "32-bit test"
         run: lima make -C /tmp/selinux GOARCH=386 test
+
+  all-done:
+    needs:
+      - commit
+      - lint
+      - codespell
+      - cross
+      - test-stubs
+      - test
+      - vm
+    runs-on: ubuntu-24.04
+    steps:
+    - run: echo "All jobs completed"
