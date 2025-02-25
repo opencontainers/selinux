@@ -90,3 +90,41 @@ jobs:
 
       - name: test
         run: make TESTFLAGS="${{ matrix.race }}" test
+
+  vm:
+    name: "VM"
+    strategy:
+      fail-fast: false
+      matrix:
+        template:
+          - template://almalinux-8
+          - template://centos-stream-9
+          - template://fedora
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Install Lima"
+        uses: lima-vm/lima-actions/setup@v1
+        id: lima-actions-setup
+
+      - name: "Cache ~/.cache/lima"
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/lima
+          key: lima-${{ steps.lima-actions-setup.outputs.version }}-${{ matrix.template }}
+
+      - name: "Start VM"
+        # --plain is set to disable file sharing, port forwarding, built-in containerd, etc. for faster start up
+        run: limactl start --plain --name=default ${{ matrix.template }}
+
+      - name: "Initialize VM"
+        run: |
+          set -eux -o pipefail
+          # Sync the current directory to /tmp/selinux in the guest
+          limactl cp -r . default:/tmp/selinux
+          # Install packages
+          lima sudo dnf install -y git make golang
+
+      - name: "make test"
+        run: lima make -C /tmp/selinux test
