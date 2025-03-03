@@ -134,22 +134,14 @@ func prepareTestSet(tb testing.TB, levels, dirs, files int) (dir string, total u
 	tb.Helper()
 	var err error
 
-	dir, err = os.MkdirTemp(".", "pwalk-test-")
-	if err != nil {
-		tb.Fatal(err)
-	}
-	tb.Cleanup(func() {
-		if err := os.RemoveAll(dir); err != nil && !errors.Is(err, os.ErrNotExist) {
-			tb.Errorf("cleanup error: %v", err)
-		}
-	})
+	dir = tb.TempDir()
 	total, err = makeManyDirs(dir, levels, dirs, files)
 	if err != nil {
 		tb.Fatal(err)
 	}
 	total++ // this dir
 
-	return
+	return dir, total
 }
 
 type walkerFunc func(root string, walkFn fs.WalkDirFunc) error
