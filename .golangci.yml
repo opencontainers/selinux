@@ -1,12 +1,12 @@
 ---
 run:
   concurrency: 6
-  deadline: 5m
+  timeout: 5m
 linters:
   enable:
+    # - copyloopvar   # Detects places where loop variables are copied. TODO enable for Go 1.22+
     - dupword       # Detects duplicate words.
     - errorlint     # Detects code that may cause problems with Go 1.13 error wrapping.
-    - exportloopref # Detects pointers to enclosing loop variables.
     - gocritic      # Metalinter; detects bugs, performance, and styling issues.
     - gofumpt       # Detects whether code was gofumpt-ed.
     - gosec         # Detects security problems.
@@ -16,13 +16,12 @@ linters:
     - prealloc      # Detects slice declarations that could potentially be pre-allocated.
     - predeclared   # Detects code that shadows one of Go's predeclared identifiers
     - revive        # Metalinter; drop-in replacement for golint.
-    - tenv          # Detects using os.Setenv instead of t.Setenv.
     - thelper       # Detects test helpers without t.Helper().
     - tparallel     # Detects inappropriate usage of t.Parallel().
     - unconvert     # Detects unnecessary type conversions.
+    - usetesting    # Reports uses of functions with replacement inside the testing package.
 linters-settings:
   govet:
-    check-shadowing: true
     enable-all: true
     settings:
       shadow:
