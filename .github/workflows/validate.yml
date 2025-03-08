@@ -100,6 +100,7 @@ jobs:
           - template://almalinux-8
           - template://centos-stream-9
           - template://fedora
+          - template://experimental/opensuse-tumbleweed
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -124,7 +125,14 @@ jobs:
           # Sync the current directory to /tmp/selinux in the guest
           limactl cp -r . default:/tmp/selinux
           # Install packages
-          lima sudo dnf install --setopt=install_weak_deps=false --setopt=tsflags=nodocs -y git-core make golang
+          if lima command -v dnf >/dev/null; then
+            lima sudo dnf install --setopt=install_weak_deps=false --setopt=tsflags=nodocs -y git-core make golang
+          elif lima command -v zypper >/dev/null; then
+            lima sudo zypper install -y git make go
+          else
+            echo >&2 "Unsupported distribution"
+            exit 1
+          fi
 
       - name: "make test"
         run: lima make -C /tmp/selinux test
