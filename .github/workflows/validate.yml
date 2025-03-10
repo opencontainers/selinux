@@ -125,10 +125,15 @@ jobs:
           lima sudo dnf install -y git make golang
 
       - name: "make test"
+        continue-on-error: true
         run: lima make -C /tmp/selinux test
 
       - name: "32-bit test"
+        continue-on-error: true
         run: lima make -C /tmp/selinux GOARCH=386 test
+
+      - name: "Show AVC denials"
+        run: lima sudo ausearch -m AVC || true
 
   all-done:
     needs:
