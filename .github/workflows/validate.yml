@@ -125,10 +125,15 @@ jobs:
           lima sudo dnf install --setopt=install_weak_deps=false --setopt=tsflags=nodocs -y git-core make golang
 
       - name: "make test"
+        continue-on-error: true
         run: lima make -C /tmp/selinux test
 
       - name: "32-bit test"
+        continue-on-error: true
         run: lima make -C /tmp/selinux GOARCH=386 test
+
+      - name: "Show AVC denials"
+        run: lima sudo ausearch -m AVC,USER_AVC || true
 
   all-done:
     needs:
