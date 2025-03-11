@@ -124,7 +124,7 @@ jobs:
           # Sync the current directory to /tmp/selinux in the guest
           limactl cp -r . default:/tmp/selinux
           # Install packages
-          lima sudo dnf install -y git make golang
+          lima sudo dnf install --setopt=install_weak_deps=false --setopt=tsflags=nodocs -y git-core make golang
 
       - name: "make test"
         run: lima make -C /tmp/selinux test
