@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestSetFileLabel(t *testing.T) {
@@ -210,6 +212,16 @@ func TestSocketLabel(t *testing.T) {
 func TestKeyLabel(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	// Ensure the thread stays the same for duration of the test.
+	// Otherwise Go runtime can switch this to a different thread,
+	// which results in EACCES in call to SetKeyLabel.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if unix.Getpid() != unix.Gettid() {
+		t.Skip(ErrNotTGLeader)
 	}
 
 	label := "system_u:object_r:container_t:s0:c1,c2"
