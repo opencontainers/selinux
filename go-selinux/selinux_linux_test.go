@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -117,6 +118,104 @@ func TestInitLabels(t *testing.T) {
 		t.Fatal(err)
 	}
 	ReleaseLabel(plabel)
+}
+
+func TestDuplicateLabel(t *testing.T) {
+	secopt, err := DupSecOpt("system_u:system_r:container_t:s0:c1,c2")
+	if err != nil {
+		t.Fatalf("DupSecOpt: %v", err)
+	}
+	for _, opt := range secopt {
+		con := strings.SplitN(opt, ":", 2)
+		if con[0] == "user" {
+			if con[1] != "system_u" {
+				t.Errorf("DupSecOpt Failed user incorrect")
+			}
+			continue
+		}
+		if con[0] == "role" {
+			if con[1] != "system_r" {
+				t.Errorf("DupSecOpt Failed role incorrect")
+			}
+			continue
+		}
+		if con[0] == "type" {
+			if con[1] != "container_t" {
+				t.Errorf("DupSecOpt Failed type incorrect")
+			}
+			continue
+		}
+		if con[0] == "level" {
+			if con[1] != "s0:c1,c2" {
+				t.Errorf("DupSecOpt Failed level incorrect")
+			}
+			continue
+		}
+		t.Errorf("DupSecOpt failed: invalid field %q", con[0])
+	}
+	secopt = DisableSecOpt()
+	if secopt[0] != "disable" {
+		t.Errorf(`DisableSecOpt failed: want "disable", got %q`, secopt[0])
+	}
+}
+
+func TestSELinuxNoLevel(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	tlabel := "system_u:system_r:container_t"
+	dup, err := DupSecOpt(tlabel)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(dup) != 3 {
+		t.Errorf("DupSecOpt failed on non mls label: want 3, got %d", len(dup))
+	}
+	con, err := NewContext(tlabel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if con.Get() != tlabel {
+		t.Errorf("NewContext and con.Get() failed on non mls label: want %q, got %q", tlabel, con.Get())
+	}
+}
+
+func TestSocketLabel(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	label := "system_u:object_r:container_t:s0:c1,c2"
+	if err := SetSocketLabel(label); err != nil {
+		t.Fatal(err)
+	}
+	nlabel, err := SocketLabel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if label != nlabel {
+		t.Errorf("SocketLabel %s != %s", nlabel, label)
+	}
+}
+
+func TestKeyLabel(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	label := "system_u:object_r:container_t:s0:c1,c2"
+	if err := SetKeyLabel(label); err != nil {
+		t.Fatal(err)
+	}
+	nlabel, err := KeyLabel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if label != nlabel {
+		t.Errorf("KeyLabel: want %q, got %q", label, nlabel)
+	}
 }
 
 func BenchmarkContextGet(b *testing.B) {
