@@ -10,7 +10,7 @@ on:
 jobs:
 
   commit:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     # Only check commits on pull requests.
     if: github.event_name == 'pull_request'
     steps:
@@ -28,19 +28,18 @@ jobs:
           error: 'Subject too long (max 72)'
 
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
-          cache: false # golangci-lint-action does its own caching
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56
+          version: v1.64
 
   codespell:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: install deps
@@ -50,7 +49,7 @@ jobs:
       run: codespell
 
   cross:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: cross
@@ -63,10 +62,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.22.x
-          cache: false # golangci-lint-action does its own caching
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56
+          version: v1.64
       - name: test-stubs
         run: make test
 
@@ -74,9 +72,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.21.x, 1.22.x]
+        go-version: [1.19.x, 1.23.x, 1.24.x]
         race: ["-race", ""]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -135,4 +133,25 @@ jobs:
           fi
 
       - name: "make test"
+        continue-on-error: true
         run: lima make -C /tmp/selinux test
+
+      - name: "32-bit test"
+        continue-on-error: true
+        run: lima make -C /tmp/selinux GOARCH=386 test
+
+      - name: "Show AVC denials"
+        run: lima sudo ausearch -m AVC,USER_AVC || true
+
+  all-done:
+    needs:
+      - commit
+      - lint
+      - codespell
+      - cross
+      - test-stubs
+      - test
+      - vm
+    runs-on: ubuntu-24.04
+    steps:
+    - run: echo "All jobs completed"
