@@ -188,6 +188,12 @@ func TestSocketLabel(t *testing.T) {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
+	// Ensure the thread stays the same for duration of the test.
+	// Otherwise Go runtime can switch this to a different thread,
+	// which results in EACCES in call to SetSocketLabel.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	label := "system_u:object_r:container_t:s0:c1,c2"
 	if err := SetSocketLabel(label); err != nil {
 		t.Fatal(err)
