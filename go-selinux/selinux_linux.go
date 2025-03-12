@@ -813,8 +813,7 @@ func enforceMode() int {
 // setEnforceMode sets the current SELinux mode Enforcing, Permissive.
 // Disabled is not valid, since this needs to be set at boot time.
 func setEnforceMode(mode int) error {
-	//nolint:gosec // ignore G306: permissions to be 0600 or less.
-	return os.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0o644)
+	return os.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0)
 }
 
 // defaultEnforceMode returns the systems default SELinux mode Enforcing,
@@ -1021,8 +1020,7 @@ func addMcs(processLabel, fileLabel string) (string, string) {
 
 // securityCheckContext validates that the SELinux label is understood by the kernel
 func securityCheckContext(val string) error {
-	//nolint:gosec // ignore G306: permissions to be 0600 or less.
-	return os.WriteFile(filepath.Join(getSelinuxMountPoint(), "context"), []byte(val), 0o644)
+	return os.WriteFile(filepath.Join(getSelinuxMountPoint(), "context"), []byte(val), 0)
 }
 
 // copyLevel returns a label with the MLS/MCS level from src label replaced on
