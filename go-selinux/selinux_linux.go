@@ -640,15 +640,16 @@ func (m mlsRange) String() string {
 	return low + "-" + high
 }
 
-// TODO: remove min and max once Go < 1.21 is not supported.
-func max(a, b int) int {
+// TODO: remove these in favor of built-in min/max
+// once we stop supporting Go < 1.21.
+func maxInt(a, b int) int {
 	if a > b {
 		return a
 	}
 	return b
 }
 
-func min(a, b int) int {
+func minInt(a, b int) int {
 	if a < b {
 		return a
 	}
@@ -677,10 +678,10 @@ func calculateGlbLub(sourceRange, targetRange string) (string, error) {
 	outrange := &mlsRange{low: &level{}, high: &level{}}
 
 	/* take the greatest of the low */
-	outrange.low.sens = max(s.low.sens, t.low.sens)
+	outrange.low.sens = maxInt(s.low.sens, t.low.sens)
 
 	/* take the least of the high */
-	outrange.high.sens = min(s.high.sens, t.high.sens)
+	outrange.high.sens = minInt(s.high.sens, t.high.sens)
 
 	/* find the intersecting categories */
 	if s.low.cats != nil && t.low.cats != nil {
