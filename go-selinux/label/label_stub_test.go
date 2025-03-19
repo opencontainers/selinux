@@ -3,7 +3,11 @@
 
 package label
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/opencontainers/selinux/go-selinux"
+)
 
 const testLabel = "system_u:object_r:container_file_t:s0:c1,c2"
 
@@ -15,9 +19,8 @@ func TestInit(t *testing.T) {
 		t.Fatal(err)
 	}
 	testDisabled := []string{"disable"}
-	roMountLabel := ROMountLabel()
-	if roMountLabel != "" {
-		t.Errorf("ROMountLabel Failed")
+	if selinux.ROFileLabel() != "" {
+		t.Error("selinux.ROFileLabel Failed")
 	}
 	plabel, mlabel, err := InitLabels(testDisabled)
 	if err != nil {
@@ -44,45 +47,12 @@ func TestRelabel(t *testing.T) {
 	}
 }
 
-func TestSocketLabel(t *testing.T) {
-	label := testLabel
-	if err := SetSocketLabel(label); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := SocketLabel(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestKeyLabel(t *testing.T) {
-	label := testLabel
-	if err := SetKeyLabel(label); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := KeyLabel(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestProcessLabel(t *testing.T) {
-	label := testLabel
-	if err := SetProcessLabel(label); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ProcessLabel(); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestCheckLabelCompile(t *testing.T) {
-	if _, _, err := GenLabels(""); err != nil {
+	if _, _, err := InitLabels(nil); err != nil {
 		t.Fatal(err)
 	}
 
 	tmpDir := t.TempDir()
-	if _, err := FileLabel(tmpDir); err != nil {
-		t.Fatal(err)
-	}
 
 	if err := SetFileLabel(tmpDir, "foobar"); err != nil {
 		t.Fatal(err)
@@ -92,21 +62,6 @@ func TestCheckLabelCompile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := PidLabel(0); err != nil {
-		t.Fatal(err)
-	}
-
-	ClearLabels()
-
-	if err := ReserveLabel("foobar"); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := ReleaseLabel("foobar"); err != nil {
-		t.Fatal(err)
-	}
-
-	_, _ = DupSecOpt("foobar")
 	DisableSecOpt()
 
 	if err := Validate("foobar"); err != nil {
