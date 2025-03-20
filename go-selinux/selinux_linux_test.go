@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestSetFileLabel(t *testing.T) {
@@ -187,6 +190,12 @@ func TestSocketLabel(t *testing.T) {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
+	// Ensure the thread stays the same for duration of the test.
+	// Otherwise Go runtime can switch this to a different thread,
+	// which results in EACCES in call to SetSocketLabel.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	label := "system_u:object_r:container_t:s0:c1,c2"
 	if err := SetSocketLabel(label); err != nil {
 		t.Fatal(err)
@@ -203,6 +212,16 @@ func TestSocketLabel(t *testing.T) {
 func TestKeyLabel(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	// Ensure the thread stays the same for duration of the test.
+	// Otherwise Go runtime can switch this to a different thread,
+	// which results in EACCES in call to SetKeyLabel.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if unix.Getpid() != unix.Gettid() {
+		t.Skip(ErrNotTGLeader)
 	}
 
 	label := "system_u:object_r:container_t:s0:c1,c2"
@@ -235,6 +254,12 @@ func TestSELinux(t *testing.T) {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
+	// Ensure the thread stays the same for duration of the test.
+	// Otherwise Go runtime can switch this to a different thread,
+	// which results in EACCES in call to SetFSCreateLabel.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	var (
 		err            error
 		plabel, flabel string
@@ -259,21 +284,17 @@ func TestSELinux(t *testing.T) {
 	ReleaseLabel(plabel)
 
 	pid := os.Getpid()
-	t.Logf("PID:%d MCS:%s\n", pid, intToMcs(pid, 1023))
+	t.Logf("PID:%d MCS:%s", pid, intToMcs(pid, 1023))
 	err = SetFSCreateLabel("unconfined_u:unconfined_r:unconfined_t:s0")
-	if err == nil {
-		t.Log(FSCreateLabel())
-	} else {
-		t.Log("SetFSCreateLabel failed", err)
-		t.Fatal(err)
+	if err != nil {
+		t.Fatal("SetFSCreateLabel failed:", err)
 	}
+	t.Log(FSCreateLabel())
 	err = SetFSCreateLabel("")
-	if err == nil {
-		t.Log(FSCreateLabel())
-	} else {
-		t.Log("SetFSCreateLabel failed", err)
-		t.Fatal(err)
+	if err != nil {
+		t.Fatal("SetFSCreateLabel failed:", err)
 	}
+	t.Log(FSCreateLabel())
 	t.Log(PidLabel(1))
 }
 
