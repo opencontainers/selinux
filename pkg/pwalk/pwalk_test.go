@@ -97,7 +97,7 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count uint32, err err
 		var dir string
 		dir, err = os.MkdirTemp(prefix, "d-")
 		if err != nil {
-			return
+			return count, err
 		}
 		count++
 		for f := 0; f < files; f++ {
@@ -114,12 +114,12 @@ func makeManyDirs(prefix string, levels, dirs, files int) (count uint32, err err
 		}
 		var c uint32
 		if c, err = makeManyDirs(dir, levels-1, dirs, files); err != nil {
-			return
+			return count, err
 		}
 		count += c
 	}
 
-	return
+	return count, err
 }
 
 // prepareTestSet() creates a directory tree of shallow files,
