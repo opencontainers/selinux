@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -694,7 +695,6 @@ bob:staff_u:s0-s15:c0.c255`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			r := bytes.NewBufferString(tt.seUserBuf)
 			seUser, level, err := getSeUserFromReader(tt.username, tt.gids, r, lookupGroup)
 			if tt.expectedErr != "" {
@@ -724,6 +724,7 @@ func TestContextWithLevel(t *testing.T) {
 foo_r:foo_t:s0     sysadm_r:sysadm_t:s0
 staff_r:staff_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 `
+	goodFailsafeBuff := "unconfined_r:unconfined_t:s0"
 
 	verifier := func(con string) error {
 		if con != want {
@@ -734,7 +735,7 @@ staff_r:staff_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 	}
 
 	tests := []struct {
-		name, userBuff, defaultBuff string
+		name, userBuff, defaultBuff, failsafeBuff string
 	}{
 		{
 			name: "match exists in user context file",
@@ -743,7 +744,8 @@ foo_r:foo_t:s0     sysadm_r:sysadm_t:s0
 
 staff_r:staff_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 `,
-			defaultBuff: goodDefaultBuff,
+			defaultBuff:  goodDefaultBuff,
+			failsafeBuff: goodFailsafeBuff,
 		},
 		{
 			name: "match exists in default context file, but not in user file",
@@ -751,7 +753,8 @@ staff_r:staff_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 foo_r:foo_t:s0     sysadm_r:sysadm_t:s0
 fake_r:fake_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 `,
-			defaultBuff: goodDefaultBuff,
+			defaultBuff:  goodDefaultBuff,
+			failsafeBuff: goodFailsafeBuff,
 		},
 	}
 
@@ -785,17 +788,25 @@ fake_r:fake_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 		dne_r:dne_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 		`
 		c := defaultSECtx{
-			user:       "bob",
-			level:      "SystemLow-SystemHigh",
-			scon:       "system_u:staff_r:staff_t:s0",
-			userRdr:    bytes.NewBufferString(badUserBuff),
-			defaultRdr: bytes.NewBufferString(badDefaultBuff),
-			verifier:   verifier,
+			user:        "bob",
+			level:       "SystemLow-SystemHigh",
+			scon:        "system_u:staff_r:staff_t:s0",
+			userRdr:     bytes.NewBufferString(badUserBuff),
+			defaultRdr:  bytes.NewBufferString(badDefaultBuff),
+			failsafeRdr: bytes.NewBufferString(goodFailsafeBuff),
+			verifier: func(s string) error {
+				return nil
+			},
 		}
 
-		_, err := getDefaultContextFromReaders(&c)
-		if err == nil {
-			t.Fatalf("err was expected")
+		got, err := getDefaultContextFromReaders(&c)
+		if err != nil {
+			t.Fatalf("err should not exist but is: %v", err)
+		}
+
+		const want string = "bob:unconfined_r:unconfined_t:SystemLow-SystemHigh"
+		if got != want {
+			t.Fatalf("got context: %q but expected %q", got, want)
 		}
 	})
 }

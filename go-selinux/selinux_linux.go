@@ -27,6 +27,7 @@ const (
 	selinuxDir       = "/etc/selinux/"
 	selinuxUsersDir  = "contexts/users"
 	defaultContexts  = "contexts/default_contexts"
+	failsafeContext  = "contexts/failsafe_context"
 	selinuxConfig    = selinuxDir + "config"
 	selinuxfsMount   = "/sys/fs/selinux"
 	selinuxTypeTag   = "SELINUXTYPE"
@@ -57,6 +58,7 @@ type defaultSECtx struct {
 	userRdr           io.Reader
 	verifier          func(string) error
 	defaultRdr        io.Reader
+	failsafeRdr       io.Reader
 	user, level, scon string
 }
 
@@ -1349,6 +1351,33 @@ func findUserInContext(context Context, r io.Reader, verifier func(string) error
 	return "", nil
 }
 
+// getFailsafeContext returns the context in the failsafe_context file:
+// https://www.man7.org/linux/man-pages/man5/failsafe_context.5.html
+func getFailsafeContext(context Context, r io.Reader, verifier func(string) error) (string, error) {
+	conn := make([]byte, 256)
+	limReader := io.LimitReader(r, int64(len(conn)))
+	_, err := limReader.Read(conn)
+	if err != nil {
+		return "", fmt.Errorf("failed to read failsafe context: %w", err)
+	}
+
+	conn = bytes.TrimSpace(conn)
+	toConns := strings.SplitN(string(conn), ":", 4)
+	if len(toConns) != 3 {
+		return "", nil
+	}
+
+	context["role"] = toConns[0]
+	context["type"] = toConns[1]
+
+	outConn := context.get()
+	if err := verifier(outConn); err != nil {
+		return "", nil
+	}
+
+	return outConn, nil
+}
+
 func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 	if c.verifier == nil {
 		return "", ErrVerifierNil
@@ -1365,7 +1394,7 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 
 	conn, err := findUserInContext(context, c.userRdr, c.verifier)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read %q's user context file: %w", c.user, err)
 	}
 
 	if conn != "" {
@@ -1374,7 +1403,16 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 
 	conn, err = findUserInContext(context, c.defaultRdr, c.verifier)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read default user context file: %w", err)
+	}
+
+	if conn != "" {
+		return conn, nil
+	}
+
+	conn, err = getFailsafeContext(context, c.failsafeRdr, c.verifier)
+	if err != nil {
+		return "", fmt.Errorf("failed to read failsafe_context: %w", err)
 	}
 
 	if conn != "" {
@@ -1388,24 +1426,32 @@ func getDefaultContextWithLevel(user, level, scon string) (string, error) {
 	userPath := filepath.Join(policyRoot(), selinuxUsersDir, user)
 	fu, err := os.Open(userPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open %q's user context file: %w", user, err)
 	}
 	defer fu.Close()
 
 	defaultPath := filepath.Join(policyRoot(), defaultContexts)
 	fd, err := os.Open(defaultPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open default user context file: %w", err)
 	}
 	defer fd.Close()
 
+	failsafePath := filepath.Join(policyRoot(), failsafeContext)
+	fs, err := os.Open(failsafePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open failsafe user context file: %w", err)
+	}
+	defer fs.Close()
+
 	c := defaultSECtx{
-		user:       user,
-		level:      level,
-		scon:       scon,
-		userRdr:    fu,
-		defaultRdr: fd,
-		verifier:   securityCheckContext,
+		user:        user,
+		level:       level,
+		scon:        scon,
+		userRdr:     fu,
+		defaultRdr:  fd,
+		failsafeRdr: fs,
+		verifier:    securityCheckContext,
 	}
 
 	return getDefaultContextFromReaders(&c)
