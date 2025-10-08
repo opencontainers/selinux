@@ -735,7 +735,7 @@ func setKeyLabel(label string) error {
 	if label == "" && errors.Is(err, os.ErrPermission) {
 		return nil
 	}
-	if errors.Is(err, unix.EACCES) && unix.Getuid() != unix.Gettid() {
+	if errors.Is(err, unix.EACCES) && unix.Getpid() != unix.Gettid() {
 		return ErrNotTGLeader
 	}
 	return err
