@@ -580,6 +580,143 @@ func TestGlbLub(t *testing.T) {
 	}
 }
 
+func TestGetSeUser(t *testing.T) {
+	lookupGroup := func(string) (*user.Group, error) {
+		return &user.Group{
+			Gid:  "42",
+			Name: "group",
+		}, nil
+	}
+
+	tests := []struct {
+		name        string
+		username    string
+		gids        []string
+		seUserBuf   string
+		seUser      string
+		level       string
+		expectedErr string
+	}{
+		{
+			name:      "one entry match",
+			username:  "bob",
+			seUserBuf: "bob:staff_u:s0",
+			seUser:    "staff_u",
+			level:     "s0",
+		},
+		{
+			name:      "match with no level",
+			username:  "bob",
+			seUserBuf: "bob:staff_u",
+			seUser:    "staff_u",
+		},
+		{
+			name:     "match",
+			username: "bob",
+			seUserBuf: `
+system_u:system_u:s0-s15:c0.c255
+root:root:s0-s15:c0.c255
+bob:staff_u:s0-s15:c0.c255`,
+			seUser: "staff_u",
+			level:  "s0-s15:c0.c255",
+		},
+		{
+			name:     "match with comment",
+			username: "bob",
+			seUserBuf: `
+system_u:system_u:s0-s15:c0.c255
+# foobar
+root:root:s0-s15:c0.c255
+bob:staff_u:s0-s15:c0.c255 #baz`,
+			seUser: "staff_u",
+			level:  "s0-s15:c0.c255",
+		},
+		{
+			name:     "no match",
+			username: "bob",
+			seUserBuf: `
+system_u:system_u:s0-s15:c0.c255
+root:root:s0-s15:c0.c255`,
+			expectedErr: `could not find SELinux user for "bob" login`,
+		},
+		{
+			name:     "group match",
+			username: "bob",
+			gids:     []string{"42"},
+			seUserBuf: `
+system_u:system_u:s0-s15:c0.c255
+root:root:s0-s15:c0.c255
+%group:staff_u:s0`,
+			seUser: "staff_u",
+			level:  "s0",
+		},
+		{
+			name:     "no group match",
+			username: "bob",
+			gids:     []string{"99"},
+			seUserBuf: `
+system_u:system_u:s0-s15:c0.c255
+root:root:s0-s15:c0.c255
+%group:staff_u:s0`,
+			expectedErr: `could not find SELinux user for "bob" login`,
+		},
+		{
+			name:     "malformed line",
+			username: "bob",
+			seUserBuf: `
+system_u:system_u:s0-s15:c0.c255
+root:root:s0-s15:c0.c255
+foobar
+bob:staff_u:s0-s15:c0.c255`,
+			expectedErr: "line 3: malformed line",
+		},
+		{
+			name:     "empty user",
+			username: "bob",
+			seUserBuf: `
+system_u:system_u:s0-s15:c0.c255
+root:root:s0-s15:c0.c255
+:seuser_u
+bob:staff_u:s0-s15:c0.c255`,
+			expectedErr: "line 3: user_id or group_id is empty",
+		},
+		{
+			name:     "empty seuser",
+			username: "bob",
+			seUserBuf: `
+system_u:system_u:s0-s15:c0.c255
+root:root:s0-s15:c0.c255
+user::s0
+bob:staff_u:s0-s15:c0.c255`,
+			expectedErr: "line 3: seuser_id is empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			r := bytes.NewBufferString(tt.seUserBuf)
+			seUser, level, err := getSeUserFromReader(tt.username, tt.gids, r, lookupGroup)
+			if tt.expectedErr != "" {
+				if err == nil {
+					t.Fatal("expected an error but got nil")
+				} else if err.Error() != tt.expectedErr {
+					t.Fatalf("got error: %q but expected %q", err.Error(), tt.expectedErr)
+				}
+			} else if tt.expectedErr == "" && err != nil {
+				t.Fatalf("err should not exist but is: %v", err)
+			}
+
+			if seUser != tt.seUser {
+				t.Fatalf("got seUser: %q but expected %q", seUser, tt.seUser)
+			}
+			if level != tt.level {
+				t.Fatalf("got level: %q but expected %q", level, tt.level)
+			}
+		})
+	}
+}
+
 func TestContextWithLevel(t *testing.T) {
 	want := "bob:sysadm_r:sysadm_t:SystemLow-SystemHigh"
 
