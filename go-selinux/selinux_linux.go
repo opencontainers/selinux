@@ -1210,28 +1210,27 @@ func getSeUserFromReader(username string, gids []string, r io.Reader, lookupGrou
 		lineNum++
 
 		// remove any trailing comments, then extra whitespace
-		parts := strings.SplitN(line, "#", 2)
-		line = strings.TrimSpace(parts[0])
+		line, _, _ = strings.Cut(line, "#")
+		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
 
-		parts = strings.SplitN(line, ":", 3)
-		if len(parts) < 2 {
+		userField, rest, ok := strings.Cut(line, ":")
+		if !ok {
 			return "", "", fmt.Errorf("line %d: malformed line", lineNum)
 		}
-		userField := parts[0]
 		if userField == "" {
 			return "", "", fmt.Errorf("line %d: user_id or group_id is empty", lineNum)
 		}
-		seUserField := parts[1]
+		seUserField, rest, ok := strings.Cut(rest, ":")
 		if seUserField == "" {
 			return "", "", fmt.Errorf("line %d: seuser_id is empty", lineNum)
 		}
 		var levelField string
 		// level is optional
-		if len(parts) > 2 {
-			levelField = parts[2]
+		if ok {
+			levelField = rest
 		}
 
 		// we found a match, return it
@@ -1268,7 +1267,7 @@ func getSeUserFromReader(username string, gids []string, r io.Reader, lookupGrou
 
 // getSeUserByName returns an SELinux user and MLS level that is
 // mapped to a given Linux user.
-func getSeUserByName(username string) (seUser string, level string, err error) {
+func getSeUserByName(username string) (string, string, error) {
 	seUsersConf := filepath.Join(policyRoot(), "seusers")
 	confFile, err := os.Open(seUsersConf)
 	if err != nil {
@@ -1278,15 +1277,15 @@ func getSeUserByName(username string) (seUser string, level string, err error) {
 
 	usr, err := user.Lookup(username)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to lookup user %q", username)
+		return "", "", err
 	}
 	gids, err := usr.GroupIds()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to find user %q's groups", username)
+		return "", "", err
 	}
 	gids = append([]string{usr.Gid}, gids...)
 
-	seUser, level, err = getSeUserFromReader(username, gids, confFile, user.LookupGroup)
+	seUser, level, err := getSeUserFromReader(username, gids, confFile, user.LookupGroup)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to parse seusers file: %w", err)
 	}

@@ -691,6 +691,27 @@ user::s0
 bob:staff_u:s0-s15:c0.c255`,
 			expectedErr: "line 3: seuser_id is empty",
 		},
+		{
+			name:      "one entry match with whitespace",
+			username:  "bob",
+			seUserBuf: "  bob:staff_u:s0 ",
+			seUser:    "staff_u",
+			level:     "s0",
+		},
+		{
+			name:      "one entry match with trailing comment",
+			username:  "bob",
+			seUserBuf: "bob:staff_u:s0#comment",
+			seUser:    "staff_u",
+			level:     "s0",
+		},
+		{
+			name:      "one entry match with whitespace and trailing comment",
+			username:  "bob",
+			seUserBuf: " bob:staff_u:s0  #comment   ",
+			seUser:    "staff_u",
+			level:     "s0",
+		},
 	}
 
 	for _, tt := range tests {
