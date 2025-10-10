@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -782,12 +783,16 @@ fake_r:fake_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := defaultSECtx{
-				user:       "bob",
-				level:      "SystemLow-SystemHigh",
-				scon:       "system_u:staff_r:staff_t:s0",
-				userRdr:    bytes.NewBufferString(tt.userBuff),
-				defaultRdr: bytes.NewBufferString(tt.defaultBuff),
-				verifier:   verifier,
+				user:  "bob",
+				level: "SystemLow-SystemHigh",
+				scon:  "system_u:staff_r:staff_t:s0",
+				openUserRdr: func() (io.ReadCloser, error) {
+					return io.NopCloser(bytes.NewBufferString(tt.userBuff)), nil
+				},
+				openDefaultRdr: func() (io.ReadCloser, error) {
+					return io.NopCloser(bytes.NewBufferString(tt.defaultBuff)), nil
+				},
+				verifier: verifier,
 			}
 
 			got, err := getDefaultContextFromReaders(&c)
@@ -809,12 +814,18 @@ fake_r:fake_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 		dne_r:dne_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 		`
 		c := defaultSECtx{
-			user:        "bob",
-			level:       "SystemLow-SystemHigh",
-			scon:        "system_u:staff_r:staff_t:s0",
-			userRdr:     bytes.NewBufferString(badUserBuff),
-			defaultRdr:  bytes.NewBufferString(badDefaultBuff),
-			failsafeRdr: bytes.NewBufferString(goodFailsafeBuff),
+			user:  "bob",
+			level: "SystemLow-SystemHigh",
+			scon:  "system_u:staff_r:staff_t:s0",
+			openUserRdr: func() (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewBufferString(badUserBuff)), nil
+			},
+			openDefaultRdr: func() (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewBufferString(badDefaultBuff)), nil
+			},
+			openFailsafeRdr: func() (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewBufferString(goodFailsafeBuff)), nil
+			},
 			verifier: func(s string) error {
 				return nil
 			},

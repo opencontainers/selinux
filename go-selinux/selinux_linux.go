@@ -54,11 +54,19 @@ type mlsRange struct {
 	high *level
 }
 
+type openReaderCloser func() (io.ReadCloser, error)
+
+func createOpener(path string) openReaderCloser {
+	return func() (io.ReadCloser, error) {
+		return os.Open(path)
+	}
+}
+
 type defaultSECtx struct {
-	userRdr           io.Reader
+	openUserRdr       openReaderCloser
 	verifier          func(string) error
-	defaultRdr        io.Reader
-	failsafeRdr       io.Reader
+	openDefaultRdr    openReaderCloser
+	openFailsafeRdr   openReaderCloser
 	user, level, scon string
 }
 
@@ -1391,7 +1399,13 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 	context["user"] = c.user
 	context["level"] = c.level
 
-	conn, err := findUserInContext(context, c.userRdr, c.verifier)
+	userRdr, err := c.openUserRdr()
+	if err != nil {
+		return "", fmt.Errorf("failed to open user context file: %w", err)
+	}
+	defer userRdr.Close()
+
+	conn, err := findUserInContext(context, userRdr, c.verifier)
 	if err != nil {
 		return "", fmt.Errorf("failed to read %q's user context file: %w", c.user, err)
 	}
@@ -1400,7 +1414,13 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 		return conn, nil
 	}
 
-	conn, err = findUserInContext(context, c.defaultRdr, c.verifier)
+	defaultRdr, err := c.openDefaultRdr()
+	if err != nil {
+		return "", fmt.Errorf("failed to open default context file: %w", err)
+	}
+	defer defaultRdr.Close()
+
+	conn, err = findUserInContext(context, defaultRdr, c.verifier)
 	if err != nil {
 		return "", fmt.Errorf("failed to read default user context file: %w", err)
 	}
@@ -1409,7 +1429,13 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 		return conn, nil
 	}
 
-	conn, err = getFailsafeContext(context, c.failsafeRdr, c.verifier)
+	failsafeRdr, err := c.openFailsafeRdr()
+	if err != nil {
+		return "", fmt.Errorf("failed to open failsafe context file: %w", err)
+	}
+	defer failsafeRdr.Close()
+
+	conn, err = getFailsafeContext(context, failsafeRdr, c.verifier)
 	if err != nil {
 		return "", fmt.Errorf("failed to read failsafe_context: %w", err)
 	}
@@ -1423,34 +1449,17 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 
 func getDefaultContextWithLevel(user, level, scon string) (string, error) {
 	userPath := filepath.Join(policyRoot(), selinuxUsersDir, user)
-	fu, err := os.Open(userPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open %q's user context file: %w", user, err)
-	}
-	defer fu.Close()
-
 	defaultPath := filepath.Join(policyRoot(), defaultContexts)
-	fd, err := os.Open(defaultPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open default user context file: %w", err)
-	}
-	defer fd.Close()
-
 	failsafePath := filepath.Join(policyRoot(), failsafeContext)
-	fs, err := os.Open(failsafePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open failsafe user context file: %w", err)
-	}
-	defer fs.Close()
 
 	c := defaultSECtx{
-		user:        user,
-		level:       level,
-		scon:        scon,
-		userRdr:     fu,
-		defaultRdr:  fd,
-		failsafeRdr: fs,
-		verifier:    securityCheckContext,
+		user:            user,
+		level:           level,
+		scon:            scon,
+		openUserRdr:     createOpener(userPath),
+		openDefaultRdr:  createOpener(defaultPath),
+		openFailsafeRdr: createOpener(failsafePath),
+		verifier:        securityCheckContext,
 	}
 
 	return getDefaultContextFromReaders(&c)
