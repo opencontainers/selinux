@@ -72,13 +72,13 @@ func ClassIndex(class string) (int, error) {
 
 // SetFileLabel sets the SELinux label for this path, following symlinks,
 // or returns an error.
-func SetFileLabel(fpath string, label string) error {
+func SetFileLabel(fpath, label string) error {
 	return setFileLabel(fpath, label)
 }
 
 // LsetFileLabel sets the SELinux label for this path, not following symlinks,
 // or returns an error.
-func LsetFileLabel(fpath string, label string) error {
+func LsetFileLabel(fpath, label string) error {
 	return lSetFileLabel(fpath, label)
 }
 
@@ -135,7 +135,7 @@ func CanonicalizeContext(val string) (string, error) {
 
 // ComputeCreateContext requests the type transition from source to target for
 // class from the kernel.
-func ComputeCreateContext(source string, target string, class string) (string, error) {
+func ComputeCreateContext(source, target, class string) (string, error) {
 	return computeCreateContext(source, target, class)
 }
 
@@ -269,7 +269,7 @@ func InitContainerLabels() (string, string) {
 
 // ContainerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
-func ContainerLabels() (processLabel string, fileLabel string) {
+func ContainerLabels() (processLabel, fileLabel string) {
 	return containerLabels()
 }
 
@@ -289,7 +289,7 @@ func CopyLevel(src, dest string) (string, error) {
 // directory tree setting the label.
 //
 // The fpath itself is guaranteed to be relabeled last.
-func Chcon(fpath string, label string, recurse bool) error {
+func Chcon(fpath, label string, recurse bool) error {
 	return chcon(fpath, label, recurse)
 }
 

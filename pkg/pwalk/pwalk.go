@@ -100,7 +100,7 @@ func WalkN(root string, walkFn WalkFunc, num int) error {
 	}()
 
 	wg.Add(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		go func() {
 			for file := range files {
 				if e := walkFn(file.path, *file.info, nil); e != nil {

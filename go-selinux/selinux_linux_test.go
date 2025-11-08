@@ -243,7 +243,7 @@ func BenchmarkContextGet(b *testing.B) {
 		b.Fatal(err)
 	}
 	str := ""
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		str = ctx.get()
 	}
 	b.Log(str)
@@ -674,8 +674,8 @@ func BenchmarkChcon(b *testing.B) {
 		b.Fatalf("FileLabel(%q): %v", file, err)
 	}
 	b.Logf("Chcon(%q, %q)", dir, con)
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+
+	for b.Loop() {
 		if err := Chcon(dir, con, true); err != nil {
 			b.Fatal(err)
 		}
@@ -687,7 +687,7 @@ func BenchmarkCurrentLabel(b *testing.B) {
 		l   string
 		err error
 	)
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		l, err = CurrentLabel()
 		if err != nil {
 			b.Fatal(err)
@@ -698,14 +698,14 @@ func BenchmarkCurrentLabel(b *testing.B) {
 
 func BenchmarkReadConfig(b *testing.B) {
 	str := ""
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		str = readConfig(selinuxTypeTag)
 	}
 	b.Log(str)
 }
 
 func BenchmarkLoadLabels(b *testing.B) {
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		loadLabels()
 	}
 }

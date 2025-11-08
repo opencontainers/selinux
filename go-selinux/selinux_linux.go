@@ -454,7 +454,7 @@ func classIndex(class string) (int, error) {
 
 // lSetFileLabel sets the SELinux label for this path, not following symlinks,
 // or returns an error.
-func lSetFileLabel(fpath string, label string) error {
+func lSetFileLabel(fpath, label string) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}
@@ -473,7 +473,7 @@ func lSetFileLabel(fpath string, label string) error {
 
 // setFileLabel sets the SELinux label for this path, following symlinks,
 // or returns an error.
-func setFileLabel(fpath string, label string) error {
+func setFileLabel(fpath, label string) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}
@@ -566,7 +566,7 @@ func canonicalizeContext(val string) (string, error) {
 
 // computeCreateContext requests the type transition from source to target for
 // class from the kernel.
-func computeCreateContext(source string, target string, class string) (string, error) {
+func computeCreateContext(source, target, class string) (string, error) {
 	classidx, err := classIndex(class)
 	if err != nil {
 		return "", err
@@ -579,8 +579,7 @@ func computeCreateContext(source string, target string, class string) (string, e
 func catsToBitset(cats string) (*big.Int, error) {
 	bitset := new(big.Int)
 
-	catlist := strings.Split(cats, ",")
-	for _, r := range catlist {
+	for r := range strings.SplitSeq(cats, ",") {
 		ranges := strings.SplitN(r, ".", 2)
 		if len(ranges) > 1 {
 			catstart, err := parseLevelItem(ranges[0], category)
@@ -788,7 +787,7 @@ func calculateGlbLub(sourceRange, targetRange string) (string, error) {
 	return outrange.String(), nil
 }
 
-func readWriteCon(fpath string, val string) (string, error) {
+func readWriteCon(fpath, val string) (string, error) {
 	if fpath == "" {
 		return "", ErrEmptyPath
 	}
@@ -1088,7 +1087,7 @@ func initContainerLabels() (string, string) {
 
 // containerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
-func containerLabels() (processLabel string, fileLabel string) {
+func containerLabels() (processLabel, fileLabel string) {
 	if !getEnabled() {
 		return "", ""
 	}
@@ -1155,7 +1154,7 @@ func copyLevel(src, dest string) (string, error) {
 // chcon changes the fpath file object to the SELinux label.
 // If fpath is a directory and recurse is true, then chcon walks the
 // directory tree setting the label.
-func chcon(fpath string, label string, recurse bool) error {
+func chcon(fpath, label string, recurse bool) error {
 	if fpath == "" {
 		return ErrEmptyPath
 	}

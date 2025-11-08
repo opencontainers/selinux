@@ -2,7 +2,20 @@ version: "2"
 
 formatters:
   enable:
+    - gci
     - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/opencontainers/selinux)
+    gofumpt:
+      extra-rules: true
+    goimports:
+      local-prefixes:
+        - github.com/opencontainers/selinux
 
 linters:
   enable:
@@ -12,6 +25,7 @@ linters:
     - gocritic      # Metalinter; detects bugs, performance, and styling issues.
     - gosec         # Detects security problems.
     - misspell      # Detects commonly misspelled English words in comments.
+    - modernize     # Suggest simplifications to Go code.
     - nilerr        # Detects code that returns nil even if it checks that the error is not nil.
     - nolintlint    # Detects ill-formed or insufficient nolint directives.
     - prealloc      # Detects slice declarations that could potentially be pre-allocated.

@@ -93,14 +93,14 @@ func TestWalkDirManyErrors(t *testing.T) {
 }
 
 func makeManyDirs(prefix string, levels, dirs, files int) (count uint32, err error) {
-	for d := 0; d < dirs; d++ {
+	for range dirs {
 		var dir string
 		dir, err = os.MkdirTemp(prefix, "d-")
 		if err != nil {
 			return count, err
 		}
 		count++
-		for f := 0; f < files; f++ {
+		for range files {
 			var fi *os.File
 			fi, err = os.CreateTemp(dir, "f-")
 			if err != nil {

@@ -26,7 +26,7 @@ var ErrIncompatibleLabel = errors.New("bad SELinux option: z and Z can not be us
 // guaranteed to be unique.
 // If the disabled flag is passed in, the process label will not be set, but the mount label will be set
 // to the container_file label with the maximum category. This label is not usable by any confined label.
-func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
+func InitLabels(options []string) (plabel, mlabel string, retErr error) {
 	if !selinux.GetEnabled() {
 		return "", "", nil
 	}
@@ -80,7 +80,7 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 }
 
 // SetFileLabel modifies the "path" label to the specified file label
-func SetFileLabel(path string, fileLabel string) error {
+func SetFileLabel(path, fileLabel string) error {
 	if !selinux.GetEnabled() || fileLabel == "" {
 		return nil
 	}
@@ -100,7 +100,7 @@ func SetFileCreateLabel(fileLabel string) error {
 // This will allow all containers to share the content.
 //
 // The path itself is guaranteed to be relabeled last.
-func Relabel(path string, fileLabel string, shared bool) error {
+func Relabel(path, fileLabel string, shared bool) error {
 	if !selinux.GetEnabled() || fileLabel == "" {
 		return nil
 	}
