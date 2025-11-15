@@ -305,11 +305,19 @@ func DisableSecOpt() []string {
 	return []string{"disable"}
 }
 
+// GetSeUserByName retrieves the SELinux username and security level for a given
+// Linux username. The username and security level is based on the
+// /etc/selinux/{SELINUXTYPE}/seusers file.
+func GetSeUserByName(username string) (seUser string, level string, err error) {
+	return getSeUserByName(username)
+}
+
 // GetDefaultContextWithLevel gets a single context for the specified SELinux user
 // identity that is reachable from the specified scon context. The context is based
 // on the per-user /etc/selinux/{SELINUXTYPE}/contexts/users/<username> if it exists,
 // and falls back to the global /etc/selinux/{SELINUXTYPE}/contexts/default_contexts
-// file.
+// file and finally the global /etc/selinux/{SELINUXTYPE}/contexts/failsafe_context
+// file if no match can be found anywhere else.
 func GetDefaultContextWithLevel(user, level, scon string) (string, error) {
 	return getDefaultContextWithLevel(user, level, scon)
 }

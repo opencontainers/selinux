@@ -146,6 +146,10 @@ func dupSecOpt(string) ([]string, error) {
 	return nil, nil
 }
 
+func getSeUserByName(string) (string, string, error) {
+	return "", "", nil
+}
+
 func getDefaultContextWithLevel(string, string, string) (string, error) {
 	return "", nil
 }
