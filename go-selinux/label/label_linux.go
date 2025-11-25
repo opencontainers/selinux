@@ -17,6 +17,7 @@ var validOptions = map[string]bool{
 	"role":     true,
 	"level":    true,
 }
+var maxSelinuxLabelSize = int(selinux.CategoryRange * (selinux.CategoryRange - 1) / 2)
 
 var ErrIncompatibleLabel = errors.New("bad SELinux option: z and Z can not be used together")
 
@@ -29,6 +30,9 @@ var ErrIncompatibleLabel = errors.New("bad SELinux option: z and Z can not be us
 func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 	if !selinux.GetEnabled() {
 		return "", "", nil
+	}
+	if size := selinux.ContainerLabelsSize(); size >= maxSelinuxLabelSize {
+		return "", "", fmt.Errorf("SELinux label exhaustion: %d labels used", size)
 	}
 	processLabel, mountLabel := selinux.ContainerLabels()
 	if processLabel != "" {
