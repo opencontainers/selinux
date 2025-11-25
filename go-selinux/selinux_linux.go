@@ -39,13 +39,15 @@ const (
 
 type selinuxState struct {
 	mcsList       map[string]bool
+	cond          *sync.Cond
 	selinuxfs     string
+	maxMCSCount   int
 	selinuxfsOnce sync.Once
-	enabledSet    bool
-	enabled       bool
+	mu            sync.Mutex
 	sync.Mutex
+	enabledSet bool
+	enabled    bool
 }
-
 type level struct {
 	cats *big.Int
 	sens int
@@ -936,6 +938,18 @@ func mcsAdd(mcs string) error {
 	if mcs == "" {
 		return nil
 	}
+	state.mu.Lock()
+	if state.maxMCSCount == 0 {
+		state.maxMCSCount = int(CategoryRange * (CategoryRange - 1) / 2)
+	}
+	if state.cond == nil {
+		state.cond = sync.NewCond(&state.mu)
+	}
+	if getMcsListSize() >= state.maxMCSCount {
+		state.cond.Wait()
+	}
+	state.mu.Unlock()
+
 	state.Lock()
 	defer state.Unlock()
 	if state.mcsList[mcs] {
@@ -945,6 +959,12 @@ func mcsAdd(mcs string) error {
 	return nil
 }
 
+func getMcsListSize() int {
+	state.Lock()
+	defer state.Unlock()
+	return len(state.mcsList)
+}
+
 func mcsDelete(mcs string) {
 	if mcs == "" {
 		return
@@ -952,6 +972,9 @@ func mcsDelete(mcs string) {
 	state.Lock()
 	defer state.Unlock()
 	state.mcsList[mcs] = false
+	state.mu.Lock()
+	state.cond.Signal()
+	state.mu.Unlock()
 }
 
 func intToMcs(id int, catRange uint32) string {
