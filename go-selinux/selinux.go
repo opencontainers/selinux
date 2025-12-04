@@ -257,19 +257,19 @@ func ROFileLabel() string {
 
 // KVMContainerLabels returns the default processLabel and mountLabel to be used
 // for kvm containers by the calling process.
-func KVMContainerLabels() (string, string) {
+func KVMContainerLabels() (string, string, error) {
 	return kvmContainerLabels()
 }
 
 // InitContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
-func InitContainerLabels() (string, string) {
+func InitContainerLabels() (string, string, error) {
 	return initContainerLabels()
 }
 
 // ContainerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
-func ContainerLabels() (processLabel string, fileLabel string) {
+func ContainerLabels() (processLabel string, fileLabel string, err error) {
 	return containerLabels()
 }
 
