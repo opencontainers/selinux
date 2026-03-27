@@ -221,6 +221,11 @@ func ReserveLabel(label string) {
 	reserveLabel(label)
 }
 
+// CheckLabel check the MLS/MCS level component of the specified label
+func CheckLabel(label string) error {
+	return checkLabel(label)
+}
+
 // MLSEnabled checks if MLS is enabled.
 func MLSEnabled() bool {
 	return isMLSEnabled()
