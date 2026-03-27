@@ -44,7 +44,7 @@ type selinuxState struct {
 	selinuxfsOnce sync.Once
 	enabledSet    bool
 	enabled       bool
-	sync.Mutex
+	sync.RWMutex
 }
 
 type level struct {
@@ -94,6 +94,12 @@ var (
 	loadLabelsOnce sync.Once
 	labels         map[string]string
 )
+
+func ContainerLabelsSize() int {
+	state.RLock()
+	defer state.RUnlock()
+	return len(state.mcsList)
+}
 
 func policyRoot() string {
 	policyRootOnce.Do(func() {
