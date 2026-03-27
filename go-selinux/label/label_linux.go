@@ -30,7 +30,10 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 	if !selinux.GetEnabled() {
 		return "", "", nil
 	}
-	processLabel, mountLabel := selinux.ContainerLabels()
+	processLabel, mountLabel, err := selinux.ContainerLabels()
+	if err != nil {
+		return "", "", err
+	}
 	if processLabel != "" {
 		defer func() {
 			if retErr != nil {
