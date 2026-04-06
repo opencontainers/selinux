@@ -1326,18 +1326,13 @@ func getSeUserFromReader(username string, gids []string, r io.Reader, lookupGrou
 	var groupSeUser, groupLevel string
 
 	lineNum := -1
-	reader := bufio.NewReader(r)
-	for {
-		lineBytes, readErr := reader.ReadBytes('\n')
-		if readErr != nil {
-			if !errors.Is(readErr, io.EOF) {
-				return "", "", fmt.Errorf("failed to read seusers file: %w", readErr)
-			}
-		}
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		rawLine := scanner.Text()
 		lineNum++
 
 		// remove any trailing comments, then extra whitespace
-		line, _, _ := strings.Cut(string(lineBytes), "#")
+		line, _, _ := strings.Cut(rawLine, "#")
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -1377,10 +1372,9 @@ func getSeUserFromReader(username string, gids []string, r io.Reader, lookupGrou
 			defaultSeUser = seUserField
 			defaultLevel = levelField
 		}
-
-		if errors.Is(readErr, io.EOF) {
-			break
-		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", "", fmt.Errorf("failed to read seusers file: %w", err)
 	}
 
 	if groupSeUser != "" {

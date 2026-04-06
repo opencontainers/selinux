@@ -619,14 +619,15 @@ func TestGetSeUser(t *testing.T) {
 			seUserBuf: `
 system_u:system_u:s0-s15:c0.c255
 root:root:s0-s15:c0.c255
-bob:staff_u:s0-s15:c0.c255`,
+bob:staff_u:s0-s15:c0.c255
+`,
 			seUser: "staff_u",
 			level:  "s0-s15:c0.c255",
 		},
 		{
-			name:     "match with comment",
+			name:     "match with comments",
 			username: "bob",
-			seUserBuf: `
+			seUserBuf: `# bazboom
 system_u:system_u:s0-s15:c0.c255
 # foobar
 root:root:s0-s15:c0.c255
@@ -639,7 +640,8 @@ bob:staff_u:s0-s15:c0.c255 #baz`,
 			username: "bob",
 			seUserBuf: `
 system_u:system_u:s0-s15:c0.c255
-root:root:s0-s15:c0.c255`,
+root:root:s0-s15:c0.c255
+`,
 			expectedErr: `could not find SELinux user for "bob" login`,
 		},
 		{
@@ -713,6 +715,15 @@ bob:staff_u:s0-s15:c0.c255`,
 			seUserBuf: " bob:staff_u:s0  #comment   ",
 			seUser:    "staff_u",
 			level:     "s0",
+		},
+		{
+			name:     "one entry match with leading comment",
+			username: "bob",
+			seUserBuf: `# this is a comment
+bob:staff_u:s0
+`,
+			seUser: "staff_u",
+			level:  "s0",
 		},
 	}
 
