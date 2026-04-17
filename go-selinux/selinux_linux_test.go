@@ -211,6 +211,35 @@ func TestSocketLabel(t *testing.T) {
 	}
 }
 
+func TestExecLabel(t *testing.T) {
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping.")
+	}
+
+	// Ensure the thread stays the same for duration of the test.
+	// Otherwise Go runtime can switch this to a different thread,
+	// which results in EACCES in call to SetExecLabel.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	const label = "system_u:object_r:container_t:s0:c1,c2"
+	if err := SetExecLabel(label); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := SetExecLabel(""); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	nlabel, err := ExecLabel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if label != nlabel {
+		t.Errorf("ExecLabel: want %q, got %q", label, nlabel)
+	}
+}
+
 func TestKeyLabel(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
