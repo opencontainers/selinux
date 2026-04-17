@@ -244,12 +244,9 @@ func readConfig(target string) string {
 			// Skip comments
 			continue
 		}
-		fields := bytes.SplitN(line, []byte{'='}, 2)
-		if len(fields) != 2 {
-			continue
-		}
-		if bytes.Equal(fields[0], []byte(target)) {
-			return string(bytes.Trim(fields[1], `"`))
+		key, val, ok := bytes.Cut(line, []byte{'='})
+		if ok && string(key) == target {
+			return string(bytes.Trim(val, `"`))
 		}
 	}
 	return ""
@@ -581,13 +578,12 @@ func catsToBitset(cats string) (*big.Int, error) {
 
 	catlist := strings.Split(cats, ",")
 	for _, r := range catlist {
-		ranges := strings.SplitN(r, ".", 2)
-		if len(ranges) > 1 {
-			catstart, err := parseLevelItem(ranges[0], category)
+		if s, e, ok := strings.Cut(r, "."); ok {
+			catstart, err := parseLevelItem(s, category)
 			if err != nil {
 				return nil, err
 			}
-			catend, err := parseLevelItem(ranges[1], category)
+			catend, err := parseLevelItem(e, category)
 			if err != nil {
 				return nil, err
 			}
@@ -595,7 +591,7 @@ func catsToBitset(cats string) (*big.Int, error) {
 				bitset.SetBit(bitset, i, 1)
 			}
 		} else {
-			cat, err := parseLevelItem(ranges[0], category)
+			cat, err := parseLevelItem(r, category)
 			if err != nil {
 				return nil, err
 			}
@@ -623,14 +619,14 @@ func parseLevelItem(s string, sep levelItem) (int, error) {
 // parseLevel fills a level from a string that contains
 // a sensitivity and categories
 func (l *level) parseLevel(levelStr string) error {
-	lvl := strings.SplitN(levelStr, ":", 2)
-	sens, err := parseLevelItem(lvl[0], sensitivity)
+	s, c, ok := strings.Cut(levelStr, ":")
+	sens, err := parseLevelItem(s, sensitivity)
 	if err != nil {
 		return fmt.Errorf("failed to parse sensitivity: %w", err)
 	}
 	l.sens = sens
-	if len(lvl) > 1 {
-		cats, err := catsToBitset(lvl[1])
+	if ok {
+		cats, err := catsToBitset(c)
 		if err != nil {
 			return fmt.Errorf("failed to parse categories: %w", err)
 		}
@@ -643,25 +639,19 @@ func (l *level) parseLevel(levelStr string) error {
 // rangeStrToMLSRange marshals a string representation of a range.
 func rangeStrToMLSRange(rangeStr string) (*mlsRange, error) {
 	r := &mlsRange{}
-	l := strings.SplitN(rangeStr, "-", 2)
-
-	switch len(l) {
-	// rangeStr that has a low and a high level, e.g. s4:c0.c1023-s6:c0.c1023
-	case 2:
-		r.high = &level{}
-		if err := r.high.parseLevel(l[1]); err != nil {
-			return nil, fmt.Errorf("failed to parse high level %q: %w", l[1], err)
-		}
-		fallthrough
-	// rangeStr that is single level, e.g. s6:c0,c3,c5,c30.c1023
-	case 1:
-		r.low = &level{}
-		if err := r.low.parseLevel(l[0]); err != nil {
-			return nil, fmt.Errorf("failed to parse low level %q: %w", l[0], err)
-		}
+	lo, hi, ok := strings.Cut(rangeStr, "-")
+	r.low = &level{}
+	if err := r.low.parseLevel(lo); err != nil {
+		return nil, fmt.Errorf("failed to parse low level %q: %w", lo, err)
 	}
-
-	if r.high == nil {
+	if ok {
+		// rangeStr that has a low and a high level, e.g. s4:c0.c1023-s6:c0.c1023.
+		r.high = &level{}
+		if err := r.high.parseLevel(hi); err != nil {
+			return nil, fmt.Errorf("failed to parse high level %q: %w", hi, err)
+		}
+	} else {
+		// rangeStr that is single level, e.g. s6:c0,c3,c5,c30.c1023.
 		r.high = r.low
 	}
 
@@ -1021,12 +1011,10 @@ var loadLabels = sync.OnceValue(func() map[string]string {
 			// Skip comments
 			continue
 		}
-		fields := bytes.SplitN(line, []byte{'='}, 2)
-		if len(fields) != 2 {
-			continue
+		if key, val, ok := bytes.Cut(line, []byte{'='}); ok {
+			key, val = bytes.TrimSpace(key), bytes.TrimSpace(val)
+			labels[string(key)] = string(bytes.Trim(val, `"`))
 		}
-		key, val := bytes.TrimSpace(fields[0]), bytes.TrimSpace(fields[1])
-		labels[string(key)] = string(bytes.Trim(val, `"`))
 	}
 
 	con, _ := NewContext(labels["file"])

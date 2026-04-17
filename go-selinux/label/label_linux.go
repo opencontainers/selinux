@@ -51,20 +51,17 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 				selinux.ReleaseLabel(mountLabel)
 				return "", selinux.PrivContainerMountLabel(), nil
 			}
-			if !strings.Contains(opt, ":") {
+			k, v, ok := strings.Cut(opt, ":")
+			if !ok || !validOptions[k] {
 				return "", "", fmt.Errorf("bad label option %q, valid options 'disable' or \n'user, role, level, type, filetype' followed by ':' and a value", opt)
 			}
-			con := strings.SplitN(opt, ":", 2)
-			if !validOptions[con[0]] {
-				return "", "", fmt.Errorf("bad label option %q, valid options 'disable, user, role, level, type, filetype'", con[0])
-			}
-			if con[0] == "filetype" {
-				mcon["type"] = con[1]
+			if k == "filetype" {
+				mcon["type"] = v
 				continue
 			}
-			pcon[con[0]] = con[1]
-			if con[0] == "level" || con[0] == "user" {
-				mcon[con[0]] = con[1]
+			pcon[k] = v
+			if k == "level" || k == "user" {
+				mcon[k] = v
 			}
 		}
 		if pcon.Get() != processLabel {
