@@ -69,7 +69,7 @@ func calculateGlbLub(string, string) (string, error) {
 	return "", nil
 }
 
-func peerLabel(uintptr) (string, error) {
+func peerLabel(int) (string, error) {
 	return "", nil
 }
 
