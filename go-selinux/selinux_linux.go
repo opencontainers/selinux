@@ -564,7 +564,7 @@ func pidLabel(pid int) (string, error) {
 // ExecLabel returns the SELinux label that the kernel will use for any programs
 // that are executed by the current process thread, or an error.
 func execLabel() (string, error) {
-	return readConThreadSelf("exec")
+	return readConThreadSelf("attr/exec")
 }
 
 // canonicalizeContext takes a context string and writes it to the kernel
