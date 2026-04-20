@@ -1,6 +1,6 @@
 module github.com/opencontainers/selinux
 
-go 1.19
+go 1.22
 
 require (
 	github.com/cyphar/filepath-securejoin v0.5.1

@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -742,22 +743,6 @@ func (m mlsRange) String() string {
 	return low + "-" + high
 }
 
-// TODO: remove these in favor of built-in min/max
-// once we stop supporting Go < 1.21.
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // calculateGlbLub computes the glb (greatest lower bound) and lub (least upper bound)
 // of a source and target range.
 // The glblub is calculated as the greater of the low sensitivities and
@@ -780,10 +765,10 @@ func calculateGlbLub(sourceRange, targetRange string) (string, error) {
 	outrange := &mlsRange{low: &level{}, high: &level{}}
 
 	/* take the greatest of the low */
-	outrange.low.sens = maxInt(s.low.sens, t.low.sens)
+	outrange.low.sens = max(s.low.sens, t.low.sens)
 
 	/* take the least of the high */
-	outrange.high.sens = minInt(s.high.sens, t.high.sens)
+	outrange.high.sens = min(s.high.sens, t.high.sens)
 
 	/* find the intersecting categories */
 	if s.low.cats != nil && t.low.cats != nil {
@@ -1312,12 +1297,7 @@ func checkGroup(group string, gids []string, lookupGroup func(string) (*user.Gro
 		return false
 	}
 
-	for _, gid := range gids {
-		if grp.Gid == gid {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(gids, grp.Gid)
 }
 
 // getSeUserFromReader reads the seusers file: https://www.man7.org/linux/man-pages/man5/seusers.5.html

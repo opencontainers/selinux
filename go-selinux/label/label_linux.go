@@ -51,7 +51,7 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 				selinux.ReleaseLabel(mountLabel)
 				return "", selinux.PrivContainerMountLabel(), nil
 			}
-			if i := strings.Index(opt, ":"); i == -1 {
+			if !strings.Contains(opt, ":") {
 				return "", "", fmt.Errorf("bad label option %q, valid options 'disable' or \n'user, role, level, type, filetype' followed by ':' and a value", opt)
 			}
 			con := strings.SplitN(opt, ":", 2)
