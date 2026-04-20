@@ -817,10 +817,10 @@ func readWriteCon(fpath string, val string) (string, error) {
 }
 
 // peerLabel retrieves the label of the client on the other side of a socket
-func peerLabel(fd uintptr) (string, error) {
-	l, err := unix.GetsockoptString(int(fd), unix.SOL_SOCKET, unix.SO_PEERSEC)
+func peerLabel(fd int) (string, error) {
+	l, err := unix.GetsockoptString(fd, unix.SOL_SOCKET, unix.SO_PEERSEC)
 	if err != nil {
-		return "", &os.PathError{Op: "getsockopt", Path: "fd " + strconv.Itoa(int(fd)), Err: err}
+		return "", &os.PathError{Op: "getsockopt", Path: "fd " + strconv.Itoa(fd), Err: err}
 	}
 	return l, nil
 }

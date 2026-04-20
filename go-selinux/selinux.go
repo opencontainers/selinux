@@ -180,7 +180,7 @@ func SocketLabel() (string, error) {
 
 // PeerLabel retrieves the label of the client on the other side of a socket
 func PeerLabel(fd uintptr) (string, error) {
-	return peerLabel(fd)
+	return peerLabel(int(fd)) //#nosec G115 -- ignore "integer overflow conversion uintptr -> int".
 }
 
 // SetKeyLabel takes a process label and tells the kernel to assign the
