@@ -83,26 +83,15 @@ const (
 
 var (
 	readOnlyFileLabel string
-	state             = selinuxState{
+
+	state = selinuxState{
 		mcsList: make(map[string]bool),
 	}
-
-	// for policyRoot()
-	policyRootOnce sync.Once
-	policyRootVal  string
-
-	// for label()
-	loadLabelsOnce sync.Once
-	labels         map[string]string
 )
 
-func policyRoot() string {
-	policyRootOnce.Do(func() {
-		policyRootVal = filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
-	})
-
-	return policyRootVal
-}
+var policyRoot = sync.OnceValue(func() string {
+	return filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
+})
 
 func (s *selinuxState) setEnable(enabled bool) bool {
 	s.Lock()
@@ -1032,11 +1021,11 @@ func openContextFile() (*os.File, error) {
 	return os.Open(filepath.Join(policyRoot(), "contexts", "lxc_contexts"))
 }
 
-func loadLabels() {
-	labels = make(map[string]string)
+var loadLabels = sync.OnceValue(func() map[string]string {
+	labels := make(map[string]string)
 	in, err := openContextFile()
 	if err != nil {
-		return
+		return labels
 	}
 	defer in.Close()
 
@@ -1064,13 +1053,11 @@ func loadLabels() {
 	con["level"] = fmt.Sprintf("s0:c%d,c%d", maxCategory-2, maxCategory-1)
 	privContainerMountLabel = con.get()
 	reserveLabel(privContainerMountLabel)
-}
+	return labels
+})
 
 func label(key string) string {
-	loadLabelsOnce.Do(func() {
-		loadLabels()
-	})
-	return labels[key]
+	return loadLabels()[key]
 }
 
 // kvmContainerLabels returns the default processLabel and mountLabel to be used
