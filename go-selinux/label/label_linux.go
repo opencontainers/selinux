@@ -31,48 +31,50 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 		return "", "", nil
 	}
 	processLabel, mountLabel := selinux.ContainerLabels()
-	if processLabel != "" {
-		defer func() {
-			if retErr != nil {
-				selinux.ReleaseLabel(mountLabel)
-			}
-		}()
-		pcon, err := selinux.NewContext(processLabel)
-		if err != nil {
-			return "", "", err
-		}
-		mcsLevel := pcon["level"]
-		mcon, err := selinux.NewContext(mountLabel)
-		if err != nil {
-			return "", "", err
-		}
-		for _, opt := range options {
-			if opt == "disable" {
-				selinux.ReleaseLabel(mountLabel)
-				return "", selinux.PrivContainerMountLabel(), nil
-			}
-			k, v, ok := strings.Cut(opt, ":")
-			if !ok || !validOptions[k] {
-				return "", "", fmt.Errorf("bad label option %q, valid options 'disable' or \n'user, role, level, type, filetype' followed by ':' and a value", opt)
-			}
-			if k == "filetype" {
-				mcon["type"] = v
-				continue
-			}
-			pcon[k] = v
-			if k == "level" || k == "user" {
-				mcon[k] = v
-			}
-		}
-		if pcon.Get() != processLabel {
-			if pcon["level"] != mcsLevel {
-				selinux.ReleaseLabel(processLabel)
-			}
-			processLabel = pcon.Get()
-			selinux.ReserveLabel(processLabel)
-		}
-		mountLabel = mcon.Get()
+	if processLabel == "" {
+		// processLabel is required; if empty, do nothing.
+		return processLabel, mountLabel, nil
 	}
+	defer func() {
+		if retErr != nil {
+			selinux.ReleaseLabel(mountLabel)
+		}
+	}()
+	pcon, err := selinux.NewContext(processLabel)
+	if err != nil {
+		return "", "", err
+	}
+	mcsLevel := pcon["level"]
+	mcon, err := selinux.NewContext(mountLabel)
+	if err != nil {
+		return "", "", err
+	}
+	for _, opt := range options {
+		if opt == "disable" {
+			selinux.ReleaseLabel(mountLabel)
+			return "", selinux.PrivContainerMountLabel(), nil
+		}
+		k, v, ok := strings.Cut(opt, ":")
+		if !ok || !validOptions[k] {
+			return "", "", fmt.Errorf("bad label option %q, valid options 'disable' or \n'user, role, level, type, filetype' followed by ':' and a value", opt)
+		}
+		if k == "filetype" {
+			mcon["type"] = v
+			continue
+		}
+		pcon[k] = v
+		if k == "level" || k == "user" {
+			mcon[k] = v
+		}
+	}
+	if p := pcon.Get(); p != processLabel {
+		if pcon["level"] != mcsLevel {
+			selinux.ReleaseLabel(processLabel)
+		}
+		selinux.ReserveLabel(p)
+		processLabel = p
+	}
+	mountLabel = mcon.Get()
 	return processLabel, mountLabel, nil
 }
 
