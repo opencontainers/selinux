@@ -595,13 +595,6 @@ func TestGlbLub(t *testing.T) {
 	for _, tt := range tests {
 		got, err := CalculateGlbLub(tt.sourceRange, tt.targetRange)
 		if !errors.Is(err, tt.expectedErr) {
-			// Go 1.13 strconv errors are not unwrappable,
-			// so do that manually.
-			// TODO remove this once we stop supporting Go 1.13.
-			var numErr *strconv.NumError
-			if errors.As(err, &numErr) && numErr.Err == tt.expectedErr { //nolint:errorlint // see above
-				continue
-			}
 			t.Fatalf("want %q got %q: src: %q tgt: %q", tt.expectedErr, err, tt.sourceRange, tt.targetRange)
 		}
 
