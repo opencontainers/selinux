@@ -44,7 +44,7 @@ type selinuxState struct {
 	selinuxfsOnce sync.Once
 	enabledSet    bool
 	enabled       bool
-	sync.Mutex
+	sync.RWMutex
 }
 
 type level struct {
@@ -975,7 +975,7 @@ func mcsDelete(mcs string) {
 	}
 	state.Lock()
 	defer state.Unlock()
-	state.mcsList[mcs] = false
+	delete(state.mcsList, mcs)
 }
 
 func intToMcs(id int, catRange uint32) string {
@@ -998,14 +998,20 @@ func intToMcs(id int, catRange uint32) string {
 	return fmt.Sprintf("s0:c%d,c%d", TIER, ORD)
 }
 
-func uniqMcs(catRange uint32) string {
+func uniqMcs(catRange uint32) (string, error) {
 	var (
 		n      uint32
 		c1, c2 uint32
 		mcs    string
 	)
-
+	maxMcsLen := int(catRange*(catRange-1)) / 2
 	for {
+		state.RLock()
+		if len(state.mcsList) == maxMcsLen {
+			state.Unlock()
+			return "", fmt.Errorf("mcsList is full, failed to create mcs")
+		}
+		state.Unlock()
 		_ = binary.Read(rand.Reader, binary.LittleEndian, &n)
 		c1 = n % catRange
 		_ = binary.Read(rand.Reader, binary.LittleEndian, &n)
@@ -1021,7 +1027,7 @@ func uniqMcs(catRange uint32) string {
 		}
 		break
 	}
-	return mcs
+	return mcs, nil
 }
 
 // releaseLabel un-reserves the MLS/MCS Level field of the specified label,
@@ -1090,7 +1096,7 @@ func label(key string) string {
 
 // kvmContainerLabels returns the default processLabel and mountLabel to be used
 // for kvm containers by the calling process.
-func kvmContainerLabels() (string, string) {
+func kvmContainerLabels() (string, string, error) {
 	processLabel := label("kvm_process")
 	if processLabel == "" {
 		processLabel = label("process")
@@ -1101,7 +1107,7 @@ func kvmContainerLabels() (string, string) {
 
 // initContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
-func initContainerLabels() (string, string) {
+func initContainerLabels() (string, string, error) {
 	processLabel := label("init_process")
 	if processLabel == "" {
 		processLabel = label("process")
@@ -1112,9 +1118,9 @@ func initContainerLabels() (string, string) {
 
 // containerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
-func containerLabels() (processLabel string, fileLabel string) {
+func containerLabels() (processLabel string, fileLabel string, err error) {
 	if !getEnabled() {
-		return "", ""
+		return "", "", nil
 	}
 
 	processLabel = label("process")
@@ -1122,7 +1128,7 @@ func containerLabels() (processLabel string, fileLabel string) {
 	readOnlyFileLabel = label("ro_file")
 
 	if processLabel == "" || fileLabel == "" {
-		return "", fileLabel
+		return "", fileLabel, nil
 	}
 
 	if readOnlyFileLabel == "" {
@@ -1132,17 +1138,20 @@ func containerLabels() (processLabel string, fileLabel string) {
 	return addMcs(processLabel, fileLabel)
 }
 
-func addMcs(processLabel, fileLabel string) (string, string) {
+func addMcs(processLabel, fileLabel string) (string, string, error) {
 	scon, _ := NewContext(processLabel)
 	if scon["level"] != "" {
-		mcs := uniqMcs(CategoryRange)
+		mcs, err := uniqMcs(CategoryRange)
+		if err != nil {
+			return "", "", err
+		}
 		scon["level"] = mcs
 		processLabel = scon.Get()
 		scon, _ = NewContext(fileLabel)
 		scon["level"] = mcs
 		fileLabel = scon.Get()
 	}
-	return processLabel, fileLabel
+	return processLabel, fileLabel, nil
 }
 
 // securityCheckContext validates that the SELinux label is understood by the kernel

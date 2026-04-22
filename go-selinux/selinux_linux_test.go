@@ -89,7 +89,10 @@ func TestKVMLabels(t *testing.T) {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
-	plabel, flabel := KVMContainerLabels()
+	plabel, flabel, err := KVMContainerLabels()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if plabel == "" {
 		t.Log("Failed to read kvm label")
 	}
@@ -110,7 +113,10 @@ func TestInitLabels(t *testing.T) {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
-	plabel, flabel := InitContainerLabels()
+	plabel, flabel, err := InitContainerLabels()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if plabel == "" {
 		t.Log("Failed to read init label")
 	}
@@ -296,20 +302,32 @@ func TestSELinux(t *testing.T) {
 		plabel, flabel string
 	)
 
-	plabel, flabel = ContainerLabels()
+	plabel, flabel, err = ContainerLabels()
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Log(plabel)
 	t.Log(flabel)
-	plabel, flabel = ContainerLabels()
+	plabel, flabel, err = ContainerLabels()
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Log(plabel)
 	t.Log(flabel)
 	ReleaseLabel(plabel)
 
-	plabel, flabel = ContainerLabels()
+	plabel, flabel, err = ContainerLabels()
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Log(plabel)
 	t.Log(flabel)
 	ClearLabels()
 	t.Log("ClearLabels")
-	plabel, flabel = ContainerLabels()
+	plabel, flabel, err = ContainerLabels()
+	if err != nil {
+		t.Fatal("err")
+	}
 	t.Log(plabel)
 	t.Log(flabel)
 	ReleaseLabel(plabel)
