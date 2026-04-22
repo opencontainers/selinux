@@ -37,6 +37,8 @@ jobs:
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.11
+      - name: notest # Extra run with tests excluded.
+        run: golangci-lint run --tests=false ./...
 
   codespell:
     runs-on: ubuntu-24.04
