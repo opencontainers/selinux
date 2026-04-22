@@ -3,7 +3,7 @@ package pwalkdir
 import (
 	"errors"
 	"io/fs"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -231,6 +231,6 @@ func cbReadFile(path string, e fs.DirEntry, _ error) error {
 }
 
 func cbRandomSleep(_ string, _ fs.DirEntry, _ error) error {
-	time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond) //nolint:gosec // ignore G404: Use of weak random number generator
+	time.Sleep(rand.N(500 * time.Microsecond)) //#nosec G404 -- this is test code
 	return nil
 }
