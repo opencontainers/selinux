@@ -978,26 +978,6 @@ func mcsDelete(mcs string) {
 	state.mcsList[mcs] = false
 }
 
-func intToMcs(id int, catRange uint32) string {
-	var (
-		SETSIZE = int(catRange)
-		TIER    = SETSIZE
-		ORD     = id
-	)
-
-	if id < 1 || id > 523776 {
-		return ""
-	}
-
-	for ORD > TIER {
-		ORD -= TIER
-		TIER--
-	}
-	TIER = SETSIZE - TIER
-	ORD += TIER
-	return fmt.Sprintf("s0:c%d,c%d", TIER, ORD)
-}
-
 func uniqMcs(catRange uint32) string {
 	var (
 		n      uint32
