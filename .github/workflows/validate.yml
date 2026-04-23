@@ -72,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.19.x, 1.25.x, 1.26.x]
+        go-version: [1.22.x, 1.25.x, 1.26.x]
         race: ["-race", ""]
     runs-on: ubuntu-24.04
     steps:

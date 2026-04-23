@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -82,26 +83,15 @@ const (
 
 var (
 	readOnlyFileLabel string
-	state             = selinuxState{
+
+	state = selinuxState{
 		mcsList: make(map[string]bool),
 	}
-
-	// for policyRoot()
-	policyRootOnce sync.Once
-	policyRootVal  string
-
-	// for label()
-	loadLabelsOnce sync.Once
-	labels         map[string]string
 )
 
-func policyRoot() string {
-	policyRootOnce.Do(func() {
-		policyRootVal = filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
-	})
-
-	return policyRootVal
-}
+var policyRoot = sync.OnceValue(func() string {
+	return filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
+})
 
 func (s *selinuxState) setEnable(enabled bool) bool {
 	s.Lock()
@@ -742,22 +732,6 @@ func (m mlsRange) String() string {
 	return low + "-" + high
 }
 
-// TODO: remove these in favor of built-in min/max
-// once we stop supporting Go < 1.21.
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // calculateGlbLub computes the glb (greatest lower bound) and lub (least upper bound)
 // of a source and target range.
 // The glblub is calculated as the greater of the low sensitivities and
@@ -780,10 +754,10 @@ func calculateGlbLub(sourceRange, targetRange string) (string, error) {
 	outrange := &mlsRange{low: &level{}, high: &level{}}
 
 	/* take the greatest of the low */
-	outrange.low.sens = maxInt(s.low.sens, t.low.sens)
+	outrange.low.sens = max(s.low.sens, t.low.sens)
 
 	/* take the least of the high */
-	outrange.high.sens = minInt(s.high.sens, t.high.sens)
+	outrange.high.sens = min(s.high.sens, t.high.sens)
 
 	/* find the intersecting categories */
 	if s.low.cats != nil && t.low.cats != nil {
@@ -1047,11 +1021,11 @@ func openContextFile() (*os.File, error) {
 	return os.Open(filepath.Join(policyRoot(), "contexts", "lxc_contexts"))
 }
 
-func loadLabels() {
-	labels = make(map[string]string)
+var loadLabels = sync.OnceValue(func() map[string]string {
+	labels := make(map[string]string)
 	in, err := openContextFile()
 	if err != nil {
-		return
+		return labels
 	}
 	defer in.Close()
 
@@ -1079,13 +1053,11 @@ func loadLabels() {
 	con["level"] = fmt.Sprintf("s0:c%d,c%d", maxCategory-2, maxCategory-1)
 	privContainerMountLabel = con.get()
 	reserveLabel(privContainerMountLabel)
-}
+	return labels
+})
 
 func label(key string) string {
-	loadLabelsOnce.Do(func() {
-		loadLabels()
-	})
-	return labels[key]
+	return loadLabels()[key]
 }
 
 // kvmContainerLabels returns the default processLabel and mountLabel to be used
@@ -1312,12 +1284,7 @@ func checkGroup(group string, gids []string, lookupGroup func(string) (*user.Gro
 		return false
 	}
 
-	for _, gid := range gids {
-		if grp.Gid == gid {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(gids, grp.Gid)
 }
 
 // getSeUserFromReader reads the seusers file: https://www.man7.org/linux/man-pages/man5/seusers.5.html
