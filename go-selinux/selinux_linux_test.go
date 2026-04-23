@@ -314,8 +314,6 @@ func TestSELinux(t *testing.T) {
 	t.Log(flabel)
 	ReleaseLabel(plabel)
 
-	pid := os.Getpid()
-	t.Logf("PID:%d MCS:%s", pid, intToMcs(pid, 1023))
 	err = SetFSCreateLabel("unconfined_u:unconfined_r:unconfined_t:s0")
 	if err != nil {
 		t.Fatal("SetFSCreateLabel failed:", err)
