@@ -30,7 +30,7 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 	if !selinux.GetEnabled() {
 		return "", "", nil
 	}
-	processLabel, mountLabel := selinux.ContainerLabels()
+	processLabel, mountLabel := selinux.ContainerLabels() //nolint:staticcheck // ContainerLabels will be moved to an internal package.
 	if processLabel == "" {
 		// processLabel is required; if empty, do nothing.
 		return processLabel, mountLabel, nil

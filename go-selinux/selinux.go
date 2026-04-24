@@ -62,8 +62,7 @@ func GetEnabled() bool {
 }
 
 // SetCategoryRange allows to adjust the upper bound of the category range.
-// It affects subsequent calls to [KVMContainerLabels], [InitContainerLabels]
-// and [ContainerLabels].
+// It affects subsequent calls to [KVMContainerLabels] and [InitContainerLabels].
 func SetCategoryRange(upper uint32) error {
 	if upper > DefaultCategoryRange {
 		return errors.New("can't have more than DefaultCategoryRange categories")
@@ -285,6 +284,9 @@ func InitContainerLabels() (string, string) {
 
 // ContainerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
+//
+// Deprecated: this (apparently) has no users and will be removed from the
+// future version of this package. Open a bug report if you use it.
 func ContainerLabels() (processLabel string, fileLabel string) {
 	return containerLabels()
 }
