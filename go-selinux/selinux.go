@@ -26,11 +26,6 @@ var (
 	// ErrInvalidLabel is returned when an invalid label is specified.
 	ErrInvalidLabel = errors.New("invalid Label")
 
-	// InvalidLabel is returned when an invalid label is specified.
-	//
-	// Deprecated: use [ErrInvalidLabel].
-	InvalidLabel = ErrInvalidLabel
-
 	// ErrIncomparable is returned two levels are not comparable
 	ErrIncomparable = errors.New("incomparable levels")
 	// ErrLevelSyntax is returned when a sensitivity or category do not have correct syntax in a level
