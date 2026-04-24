@@ -8,6 +8,7 @@ linters:
   enable:
     - copyloopvar   # Detects places where loop variables are copied.
     - dupword       # Detects duplicate words.
+    - depguard      # Allows or rejects certain package imports.
     - errorlint     # Detects code that may cause problems with Go 1.13 error wrapping.
     - gocritic      # Metalinter; detects bugs, performance, and styling issues.
     - gosec         # Detects security problems.
@@ -22,6 +23,16 @@ linters:
     - unconvert     # Detects unnecessary type conversions.
     - usetesting    # Reports uses of functions with replacement inside the testing package.
   settings:
+    depguard:
+      rules:
+        fipscompliance:
+          deny:
+            - pkg: crypto/
+              desc: Using crypto/... requires consumers to potentially have to care about FIPS compliance, so it should be avoided if possible.
+        mathrandv1:
+          deny:
+            - pkg: math/rand$
+              desc: Use math/rand/v2.
     govet:
       enable-all: true
       settings:

@@ -3,13 +3,12 @@ package selinux
 import (
 	"bufio"
 	"bytes"
-	"crypto/rand"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"math/big"
+	"math/rand/v2"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -954,16 +953,16 @@ func mcsDelete(mcs string) {
 
 func uniqMcs(catRange uint32) string {
 	var (
-		n      uint32
 		c1, c2 uint32
 		mcs    string
 	)
 
 	for {
-		_ = binary.Read(rand.Reader, binary.LittleEndian, &n)
-		c1 = n % catRange
-		_ = binary.Read(rand.Reader, binary.LittleEndian, &n)
-		c2 = n % catRange
+		//#nosec G404 -- using slightly more predictable MCS labels won't affect security, so it's fine to use math/rand/v2 here.
+		{
+			c1 = rand.Uint32N(catRange)
+			c2 = rand.Uint32N(catRange)
+		}
 		if c1 == c2 {
 			continue
 		} else if c1 > c2 {
