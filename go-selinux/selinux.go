@@ -288,6 +288,9 @@ func InitContainerLabels() (string, string) {
 
 // ContainerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
+//
+// Deprecated: this (apparently) has no users and will be removed from the
+// future version of this package. Open a bug report if you use it.
 func ContainerLabels() (processLabel string, fileLabel string) {
 	return containerLabels()
 }
