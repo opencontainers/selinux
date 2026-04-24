@@ -40,7 +40,9 @@ var (
 	// is not the thread group leader.
 	ErrNotTGLeader = errors.New("calling thread is not the thread group leader")
 
-	// CategoryRange allows the upper bound on the category range to be adjusted
+	// CategoryRange allows the upper bound on the category range to be adjusted.
+	//
+	// Deprecated: use [SetCategoryRange] instead.
 	CategoryRange = DefaultCategoryRange
 
 	privContainerMountLabel string
@@ -57,6 +59,17 @@ func SetDisabled() {
 // GetEnabled returns whether SELinux is currently enabled.
 func GetEnabled() bool {
 	return getEnabled()
+}
+
+// SetCategoryRange allows to adjust the upper bound of the category range.
+// It affects subsequent calls to [KVMContainerLabels], [InitContainerLabels]
+// and [ContainerLabels].
+func SetCategoryRange(upper uint32) error {
+	if upper > DefaultCategoryRange {
+		return errors.New("can't have more than DefaultCategoryRange categories")
+	}
+	CategoryRange = upper
+	return nil
 }
 
 // ClassIndex returns the int index for an object class in the loaded policy,
