@@ -131,32 +131,27 @@ func TestDuplicateLabel(t *testing.T) {
 		t.Fatalf("DupSecOpt: %v", err)
 	}
 	for _, opt := range secopt {
-		con := strings.SplitN(opt, ":", 2)
-		if con[0] == "user" {
-			if con[1] != "system_u" {
+		key, val, _ := strings.Cut(opt, ":")
+		switch key {
+		case "user":
+			if val != "system_u" {
 				t.Errorf("DupSecOpt Failed user incorrect")
 			}
-			continue
-		}
-		if con[0] == "role" {
-			if con[1] != "system_r" {
+		case "role":
+			if val != "system_r" {
 				t.Errorf("DupSecOpt Failed role incorrect")
 			}
-			continue
-		}
-		if con[0] == "type" {
-			if con[1] != "container_t" {
+		case "type":
+			if val != "container_t" {
 				t.Errorf("DupSecOpt Failed type incorrect")
 			}
-			continue
-		}
-		if con[0] == "level" {
-			if con[1] != "s0:c1,c2" {
+		case "level":
+			if val != "s0:c1,c2" {
 				t.Errorf("DupSecOpt Failed level incorrect")
 			}
-			continue
+		default:
+			t.Errorf("DupSecOpt failed: invalid field %q", key)
 		}
-		t.Errorf("DupSecOpt failed: invalid field %q", con[0])
 	}
 	secopt = DisableSecOpt()
 	if secopt[0] != "disable" {
