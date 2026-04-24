@@ -526,17 +526,6 @@ func setFSCreateLabel(label string) error {
 	return writeConThreadSelf("attr/fscreate", label)
 }
 
-// fsCreateLabel returns the default label the kernel which the kernel is using
-// for file system objects created by this task. "" indicates default.
-func fsCreateLabel() (string, error) {
-	return readConThreadSelf("attr/fscreate")
-}
-
-// currentLabel returns the SELinux label of the current process thread, or an error.
-func currentLabel() (string, error) {
-	return readConThreadSelf("attr/current")
-}
-
 // pidLabel returns the SELinux label of the given pid, or an error.
 func pidLabel(pid int) (string, error) {
 	it, err := openProcPid(pid, "attr/current", os.O_RDONLY|unix.O_CLOEXEC)
@@ -545,12 +534,6 @@ func pidLabel(pid int) (string, error) {
 	}
 	defer it.Close()
 	return readConFd(it)
-}
-
-// ExecLabel returns the SELinux label that the kernel will use for any programs
-// that are executed by the current process thread, or an error.
-func execLabel() (string, error) {
-	return readConThreadSelf("attr/exec")
 }
 
 // canonicalizeContext takes a context string and writes it to the kernel

@@ -41,19 +41,7 @@ func setFSCreateLabel(string) error {
 	return nil
 }
 
-func fsCreateLabel() (string, error) {
-	return "", nil
-}
-
-func currentLabel() (string, error) {
-	return "", nil
-}
-
 func pidLabel(int) (string, error) {
-	return "", nil
-}
-
-func execLabel() (string, error) {
 	return "", nil
 }
 
