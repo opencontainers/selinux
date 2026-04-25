@@ -39,11 +39,9 @@ const (
 )
 
 type selinuxState struct {
-	mcsList       map[string]bool
-	selinuxfs     string
-	selinuxfsOnce sync.Once
-	enabledSet    bool
-	enabled       bool
+	mcsList    map[string]bool
+	enabledSet bool
+	enabled    bool
 	sync.Mutex
 }
 
@@ -147,7 +145,12 @@ func verifySELinuxfsMount(mnt string) bool {
 	return true
 }
 
-func findSELinuxfs() string {
+// getSelinuxMountPoint returns the path to the mountpoint of an selinuxfs
+// filesystem or an empty string if no mountpoint is found.  Selinuxfs is
+// a proc-like pseudo-filesystem that exposes the SELinux policy API to
+// processes.  The existence of an selinuxfs mount is used to determine
+// whether SELinux is currently enabled or not.
+var getSelinuxMountPoint = sync.OnceValue(func() string {
 	// fast path: check the default mount first
 	if verifySELinuxfsMount(selinuxfsMount) {
 		return selinuxfsMount
@@ -179,7 +182,7 @@ func findSELinuxfs() string {
 			return mnt
 		}
 	}
-}
+})
 
 // findSELinuxfsMount returns a next selinuxfs mount point found,
 // if there is one, or an empty string in case of EOF or error.
@@ -200,23 +203,6 @@ func findSELinuxfsMount(s *bufio.Scanner) string {
 	}
 
 	return ""
-}
-
-func (s *selinuxState) getSELinuxfs() string {
-	s.selinuxfsOnce.Do(func() {
-		s.selinuxfs = findSELinuxfs()
-	})
-
-	return s.selinuxfs
-}
-
-// getSelinuxMountPoint returns the path to the mountpoint of an selinuxfs
-// filesystem or an empty string if no mountpoint is found.  Selinuxfs is
-// a proc-like pseudo-filesystem that exposes the SELinux policy API to
-// processes.  The existence of an selinuxfs mount is used to determine
-// whether SELinux is currently enabled or not.
-func getSelinuxMountPoint() string {
-	return state.getSELinuxfs()
 }
 
 // getEnabled returns whether SELinux is currently enabled.
