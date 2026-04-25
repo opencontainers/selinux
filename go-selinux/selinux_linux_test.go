@@ -84,44 +84,37 @@ func TestSetFileLabel(t *testing.T) {
 	}
 }
 
-func TestKVMLabels(t *testing.T) {
+func TestKVMContainerLabel(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
-	plabel, flabel := KVMContainerLabels()
-	if plabel == "" {
-		t.Log("Failed to read kvm label")
+	plabel, err := KVMContainerLabel()
+	if plabel == "" || err != nil {
+		t.Fatalf("KVMContainerLabel: got empty label (error %v)", err)
 	}
 	t.Log(plabel)
-	t.Log(flabel)
 	if _, err := CanonicalizeContext(plabel); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := CanonicalizeContext(flabel); err != nil {
 		t.Fatal(err)
 	}
 
 	ReleaseLabel(plabel)
 }
 
-func TestInitLabels(t *testing.T) {
+func TestInitContainerLabel(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
-	plabel, flabel := InitContainerLabels()
-	if plabel == "" {
-		t.Log("Failed to read init label")
+	plabel, err := InitContainerLabel()
+	if plabel == "" || err != nil {
+		t.Fatalf("InitContainerLabel: got empty label (error %v)", err)
 	}
 	t.Log(plabel)
-	t.Log(flabel)
 	if _, err := CanonicalizeContext(plabel); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := CanonicalizeContext(flabel); err != nil {
-		t.Fatal(err)
-	}
+
 	ReleaseLabel(plabel)
 }
 

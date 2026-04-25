@@ -62,7 +62,7 @@ func GetEnabled() bool {
 }
 
 // SetCategoryRange allows to adjust the upper bound of the category range.
-// It affects subsequent calls to [KVMContainerLabels] and [InitContainerLabels].
+// It affects subsequent calls to [KVMContainerLabel] and [InitContainerLabel].
 func SetCategoryRange(upper uint32) error {
 	if upper > DefaultCategoryRange {
 		return errors.New("can't have more than DefaultCategoryRange categories")
@@ -272,14 +272,30 @@ func ROFileLabel() string {
 
 // KVMContainerLabels returns the default processLabel and mountLabel to be used
 // for kvm containers by the calling process.
+//
+// Deprecated: use [KVMContainerLabel] instead.
 func KVMContainerLabels() (string, string) {
 	return kvmContainerLabels()
 }
 
+// KVMContainerLabel returns the default process label to be used
+// for KVM containers by the calling process.
+func KVMContainerLabel() (string, error) {
+	return kvmContainerLabel()
+}
+
 // InitContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
+//
+// Deprecated: use [InitContainerLabel] instead.
 func InitContainerLabels() (string, string) {
 	return initContainerLabels()
+}
+
+// InitContainerLabel returns the default process label to be used
+// for containers running an init system like systemd by the calling process.
+func InitContainerLabel() (string, error) {
+	return initContainerLabel()
 }
 
 // ContainerLabels returns an allocated processLabel and fileLabel to be used for
