@@ -266,7 +266,10 @@ func ReleaseLabel(label string) {
 	releaseLabel(label)
 }
 
-// ROFileLabel returns the specified SELinux readonly file label
+// ROFileLabel returns the specified SELinux readonly file label.
+//
+// Deprecated: this (apparently) has no users and will be removed from the
+// future version of this package. Open a bug report if you use it.
 func ROFileLabel() string {
 	return roFileLabel()
 }
