@@ -1038,6 +1038,15 @@ func kvmContainerLabels() (string, string) {
 	return addMcs(processLabel, label("file"))
 }
 
+func kvmContainerLabel() (string, error) {
+	processLabel := label("kvm_process")
+	if processLabel == "" {
+		processLabel = label("process")
+	}
+	pLabel, _, err := addMcsProc(processLabel)
+	return pLabel, err
+}
+
 // initContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
 func initContainerLabels() (string, string) {
@@ -1047,6 +1056,16 @@ func initContainerLabels() (string, string) {
 	}
 
 	return addMcs(processLabel, label("file"))
+}
+
+func initContainerLabel() (string, error) {
+	processLabel := label("init_process")
+	if processLabel == "" {
+		processLabel = label("process")
+	}
+
+	pLabel, _, err := addMcsProc(processLabel)
+	return pLabel, err
 }
 
 // containerLabels returns an allocated processLabel and fileLabel to be used for
@@ -1071,13 +1090,24 @@ func containerLabels() (processLabel string, fileLabel string) {
 	return addMcs(processLabel, fileLabel)
 }
 
-func addMcs(processLabel, fileLabel string) (string, string) {
-	scon, _ := NewContext(processLabel)
+func addMcsProc(processLabel string) (string, string, error) {
+	var mcs string
+	scon, err := NewContext(processLabel)
+	if err != nil {
+		return "", "", err
+	}
 	if scon["level"] != "" {
-		mcs := uniqMcs(CategoryRange)
+		mcs = uniqMcs(CategoryRange)
 		scon["level"] = mcs
 		processLabel = scon.Get()
-		scon, _ = NewContext(fileLabel)
+	}
+	return processLabel, mcs, nil
+}
+
+func addMcs(processLabel, fileLabel string) (string, string) {
+	processLabel, mcs, _ := addMcsProc(processLabel)
+	if mcs != "" {
+		scon, _ := NewContext(fileLabel)
 		scon["level"] = mcs
 		fileLabel = scon.Get()
 	}
