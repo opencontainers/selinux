@@ -1,4 +1,4 @@
-package selinux
+package impl
 
 import (
 	"errors"
@@ -224,15 +224,8 @@ func ClearLabels() {
 }
 
 // ReserveLabel reserves the MLS/MCS level component of the specified label.
-//
-// Deprecated: use [ReserveLabelV2] instead.
-func ReserveLabel(label string) {
-	_ = reserveLabel(label)
-}
-
-// ReserveLabelV2 reserves the MLS/MCS level component of the specified label.
 // Returns an error if the label can't be reserved.
-func ReserveLabelV2(label string) error {
+func ReserveLabel(label string) error {
 	return reserveLabel(label)
 }
 
@@ -308,9 +301,6 @@ func InitContainerLabel() (string, error) {
 
 // ContainerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
-//
-// Deprecated: this (apparently) has no users and will be removed from the
-// future version of this package. Open a bug report if you use it.
 func ContainerLabels() (processLabel string, fileLabel string) {
 	return containerLabels()
 }

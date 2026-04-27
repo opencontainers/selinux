@@ -1,2 +1,2 @@
 [codespell]
-skip = ./.git,./go.sum,./go-selinux/testdata
+skip = ./.git,./go.sum,,./internal/impl/testdata

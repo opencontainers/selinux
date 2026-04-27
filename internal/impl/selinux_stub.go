@@ -1,6 +1,6 @@
 //go:build !linux
 
-package selinux
+package impl
 
 func readConThreadSelf(string) (string, error) {
 	return "", nil

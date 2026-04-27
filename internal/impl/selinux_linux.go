@@ -1,4 +1,4 @@
-package selinux
+package impl
 
 import (
 	"bufio"

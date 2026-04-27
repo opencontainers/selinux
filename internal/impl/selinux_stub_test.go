@@ -1,6 +1,6 @@
 //go:build !linux
 
-package selinux
+package impl
 
 import (
 	"testing"
@@ -46,7 +46,9 @@ func TestSELinuxStubs(t *testing.T) {
 
 	ClearLabels()
 
-	ReserveLabel(testLabel)
+	if err := ReserveLabel(testLabel); err != nil {
+		t.Error(err)
+	}
 	ReleaseLabel(testLabel)
 	if _, err := DupSecOpt(testLabel); err != nil {
 		t.Error(err)
