@@ -26,11 +26,6 @@ var (
 	// ErrInvalidLabel is returned when an invalid label is specified.
 	ErrInvalidLabel = errors.New("invalid Label")
 
-	// InvalidLabel is returned when an invalid label is specified.
-	//
-	// Deprecated: use [ErrInvalidLabel].
-	InvalidLabel = ErrInvalidLabel
-
 	// ErrIncomparable is returned two levels are not comparable
 	ErrIncomparable = errors.New("incomparable levels")
 	// ErrLevelSyntax is returned when a sensitivity or category do not have correct syntax in a level
@@ -107,12 +102,12 @@ func SetFSCreateLabel(label string) error {
 // FSCreateLabel returns the default label the kernel which the kernel is using
 // for file system objects created by this task. "" indicates default.
 func FSCreateLabel() (string, error) {
-	return fsCreateLabel()
+	return readConThreadSelf("attr/fscreate")
 }
 
 // CurrentLabel returns the SELinux label of the current process thread, or an error.
 func CurrentLabel() (string, error) {
-	return currentLabel()
+	return readConThreadSelf("attr/current")
 }
 
 // PidLabel returns the SELinux label of the given pid, or an error.
@@ -123,7 +118,7 @@ func PidLabel(pid int) (string, error) {
 // ExecLabel returns the SELinux label that the kernel will use for any programs
 // that are executed by the current process thread, or an error.
 func ExecLabel() (string, error) {
-	return execLabel()
+	return readConThreadSelf("attr/exec")
 }
 
 // CanonicalizeContext takes a context string and writes it to the kernel
