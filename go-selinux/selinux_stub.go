@@ -114,8 +114,16 @@ func kvmContainerLabels() (string, string) {
 	return "", ""
 }
 
+func kvmContainerLabel() (string, error) {
+	return "", nil
+}
+
 func initContainerLabels() (string, string) {
 	return "", ""
+}
+
+func initContainerLabel() (string, error) {
+	return "", nil
 }
 
 func containerLabels() (string, string) {

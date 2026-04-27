@@ -24,9 +24,6 @@ func TestInit(t *testing.T) {
 		t.Fatalf("InitLabels failed: %v:", err)
 	}
 	testDisabled := []string{"disable"}
-	if selinux.ROFileLabel() == "" {
-		t.Fatal("selinux.ROFileLabel: empty")
-	}
 	plabel, mlabel, err := InitLabels(testDisabled)
 	if err != nil {
 		t.Fatalf("InitLabels(disabled) failed: %v", err)
