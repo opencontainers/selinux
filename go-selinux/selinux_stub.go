@@ -92,7 +92,8 @@ func newContext(string) (Context, error) {
 func clearLabels() {
 }
 
-func reserveLabel(string) {
+func reserveLabel(string) error {
+	return nil
 }
 
 func checkLabel(string) error {
@@ -122,16 +123,16 @@ func roFileLabel() string {
 	return ""
 }
 
-func kvmContainerLabels() (string, string) {
-	return "", ""
+func kvmContainerLabels() (string, string, error) {
+	return "", "", nil
 }
 
-func initContainerLabels() (string, string) {
-	return "", ""
+func initContainerLabels() (string, string, error) {
+	return "", "", nil
 }
 
-func containerLabels() (string, string) {
-	return "", ""
+func containerLabels() (string, string, error) {
+	return "", "", nil
 }
 
 func securityCheckContext(string) error {
@@ -158,6 +159,6 @@ func getDefaultContextWithLevel(string, string, string) (string, error) {
 	return "", nil
 }
 
-func label(_ string) string {
-	return ""
+func label(_ string) (string, error) {
+	return "", nil
 }

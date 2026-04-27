@@ -3,6 +3,7 @@ package label
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/opencontainers/selinux/go-selinux"
@@ -50,6 +51,22 @@ func TestInit(t *testing.T) {
 	testBadData := []string{"user", "role:user_r", "type:user_t", "level:s0:c1,c15"}
 	if _, _, err = InitLabels(testBadData); err == nil {
 		t.Fatal("InitLabels(bad): expected error, got nil")
+	}
+}
+
+func TestSELinuxLabelExhaustion(t *testing.T) {
+	needSELinux(t)
+	selinux.CategoryRange = 5
+	var testNull []string
+	for i := 0; i < 20; i++ {
+		_, _, err := InitLabels(testNull)
+		if i == 19 {
+			if err == nil {
+				t.Fatal("err should not be nil")
+			} else if !strings.Contains(err.Error(), "SELinux label exhaustion") {
+				t.Fatalf("unexpected error %s", err.Error())
+			}
+		}
 	}
 }
 

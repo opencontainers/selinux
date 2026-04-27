@@ -110,7 +110,10 @@ func TestInitLabels(t *testing.T) {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 
-	plabel, flabel := InitContainerLabels()
+	plabel, flabel, err := InitContainerLabelsV2()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if plabel == "" {
 		t.Log("Failed to read init label")
 	}
@@ -291,20 +294,32 @@ func TestSELinux(t *testing.T) {
 		plabel, flabel string
 	)
 
-	plabel, flabel = ContainerLabels()
+	plabel, flabel, err = InitLabels([]string{})
+	if err != nil {
+		t.Fatal("InitLabels failed:", err)
+	}
 	t.Log(plabel)
 	t.Log(flabel)
-	plabel, flabel = ContainerLabels()
+	plabel, flabel, err = InitLabels([]string{})
+	if err != nil {
+		t.Fatal("InitLabels failed:", err)
+	}
 	t.Log(plabel)
 	t.Log(flabel)
 	ReleaseLabel(plabel)
 
-	plabel, flabel = ContainerLabels()
+	plabel, flabel, err = InitLabels([]string{})
+	if err != nil {
+		t.Fatal("InitLabels failed:", err)
+	}
 	t.Log(plabel)
 	t.Log(flabel)
 	ClearLabels()
 	t.Log("ClearLabels")
-	plabel, flabel = ContainerLabels()
+	plabel, flabel, err = InitLabels([]string{})
+	if err != nil {
+		t.Fatal("InitLabels failed:", err)
+	}
 	t.Log(plabel)
 	t.Log(flabel)
 	ReleaseLabel(plabel)
@@ -913,6 +928,6 @@ func BenchmarkReadConfig(b *testing.B) {
 
 func BenchmarkLoadLabels(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		loadLabels()
+		_, _ = loadLabels()
 	}
 }

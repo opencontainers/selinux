@@ -115,7 +115,7 @@ func TestSELinuxStubs(t *testing.T) {
 	if v := ROFileLabel(); v != "" {
 		t.Errorf(`expected "", got %q`, v)
 	}
-	if processLbl, fileLbl := ContainerLabels(); processLbl != "" || fileLbl != "" {
+	if processLbl, fileLbl, err := InitLabels([]string{}); err == nil && (processLbl != "" || fileLbl != "") {
 		t.Errorf(`expected fileLbl="", fileLbl="" got processLbl=%q, fileLbl=%q`, processLbl, fileLbl)
 	}
 	if err = SecurityCheckContext(testLabel); err != nil {
