@@ -20,6 +20,7 @@ const (
 var (
 	// ErrMCSAlreadyExists is returned when trying to allocate a duplicate MCS.
 	ErrMCSAlreadyExists = errors.New("MCS label already exists")
+	ErrMCSExhausted     = errors.New("MCS label exhausted")
 	// ErrEmptyPath is returned when an empty path has been specified.
 	ErrEmptyPath = errors.New("empty path")
 
@@ -217,8 +218,15 @@ func ClearLabels() {
 }
 
 // ReserveLabel reserves the MLS/MCS level component of the specified label
+//
+// Deprecated: Use ReserveLabelV2 instead.
 func ReserveLabel(label string) {
-	reserveLabel(label)
+	_ = reserveLabel(label)
+}
+
+// ReserveLabelV2 reserves the MLS/MCS level component of the specified label
+func ReserveLabelV2(label string) error {
+	return reserveLabel(label)
 }
 
 // CheckLabel check the MLS/MCS level component of the specified label
@@ -262,20 +270,32 @@ func ROFileLabel() string {
 
 // KVMContainerLabels returns the default processLabel and mountLabel to be used
 // for kvm containers by the calling process.
+//
+// Deprecated: Use KVMContainerLabelsV2 instead.
 func KVMContainerLabels() (string, string) {
+	processLabel, fileLabel, _ := kvmContainerLabels()
+	return processLabel, fileLabel
+}
+
+// KVMContainerLabelsV2 returns the default processLabel and mountLabel to be used
+// for kvm containers by the calling process.
+func KVMContainerLabelsV2() (processLabel, fileLabel string, err error) {
 	return kvmContainerLabels()
 }
 
 // InitContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
+//
+// Deprecated: Use InitContainerLabelsV2 instead.
 func InitContainerLabels() (string, string) {
-	return initContainerLabels()
+	processLabel, fileLabel, _ := initContainerLabels()
+	return processLabel, fileLabel
 }
 
-// ContainerLabels returns an allocated processLabel and fileLabel to be used for
-// container labeling by the calling process.
-func ContainerLabels() (processLabel string, fileLabel string) {
-	return containerLabels()
+// InitContainerLabelsV2 returns the default processLabel and file labels to be
+// used for containers running an init system like systemd by the calling process.
+func InitContainerLabelsV2() (processLabel, fileLabel string, err error) {
+	return initContainerLabels()
 }
 
 // SecurityCheckContext validates that the SELinux label is understood by the kernel
@@ -330,6 +350,6 @@ func GetDefaultContextWithLevel(user, level, scon string) (string, error) {
 // PrivContainerMountLabel returns mount label for privileged containers
 func PrivContainerMountLabel() string {
 	// Make sure label is initialized.
-	_ = label("")
+	_, _ = label("")
 	return privContainerMountLabel
 }

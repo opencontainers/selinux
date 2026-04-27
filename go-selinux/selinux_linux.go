@@ -38,11 +38,13 @@ const (
 	xattrNameSelinux = "security.selinux"
 )
 
+var maxSelinuxLabelSize = int(CategoryRange * (CategoryRange - 1) / 2)
+
 type selinuxState struct {
 	mcsList    map[string]bool
 	enabledSet bool
 	enabled    bool
-	sync.Mutex
+	sync.RWMutex
 }
 
 type level struct {
@@ -89,6 +91,12 @@ var (
 var policyRoot = sync.OnceValue(func() string {
 	return filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
 })
+
+func containerLabelsSize() int {
+	state.RLock()
+	defer state.RUnlock()
+	return len(state.mcsList)
+}
 
 func (s *selinuxState) setEnable(enabled bool) bool {
 	s.Lock()
@@ -835,21 +843,26 @@ func clearLabels() {
 }
 
 // reserveLabel reserves the MLS/MCS level component of the specified label
-func reserveLabel(label string) {
+func reserveLabel(label string) error {
 	if len(label) != 0 {
 		con := strings.SplitN(label, ":", 4)
 		if len(con) > 3 {
-			_ = mcsAdd(con[3])
+			err := mcsAdd(con[3])
+			if errors.Is(err, ErrMCSExhausted) {
+				return err
+			}
+			return nil
 		}
 	}
+	return nil
 }
 
 func checkLabel(label string) error {
 	if len(label) != 0 {
 		con := strings.SplitN(label, ":", 4)
 		if len(con) > 3 {
-			state.Lock()
-			defer state.Unlock()
+			state.RLock()
+			defer state.RUnlock()
 			if state.mcsList[con[3]] {
 				return ErrMCSAlreadyExists
 			}
@@ -911,6 +924,9 @@ func mcsAdd(mcs string) error {
 	}
 	state.Lock()
 	defer state.Unlock()
+	if size := containerLabelsSize(); size >= maxSelinuxLabelSize {
+		return ErrMCSExhausted
+	}
 	if state.mcsList[mcs] {
 		return ErrMCSAlreadyExists
 	}
@@ -927,7 +943,10 @@ func mcsDelete(mcs string) {
 	state.mcsList[mcs] = false
 }
 
-func uniqMcs(catRange uint32) string {
+func uniqMcs(catRange uint32) (string, error) {
+	if size := containerLabelsSize(); size >= maxSelinuxLabelSize {
+		return "", ErrMCSExhausted
+	}
 	var (
 		c1, c2 uint32
 		mcs    string
@@ -946,11 +965,14 @@ func uniqMcs(catRange uint32) string {
 		}
 		mcs = fmt.Sprintf("s0:c%d,c%d", c1, c2)
 		if err := mcsAdd(mcs); err != nil {
+			if errors.Is(err, ErrMCSExhausted) {
+				return "", err
+			}
 			continue
 		}
 		break
 	}
-	return mcs
+	return mcs, nil
 }
 
 // releaseLabel un-reserves the MLS/MCS Level field of the specified label,
@@ -976,11 +998,11 @@ func openContextFile() (*os.File, error) {
 	return os.Open(filepath.Join(policyRoot(), "contexts", "lxc_contexts"))
 }
 
-var loadLabels = sync.OnceValue(func() map[string]string {
+var loadLabels = sync.OnceValues(func() (map[string]string, error) {
 	labels := make(map[string]string)
 	in, err := openContextFile()
 	if err != nil {
-		return labels
+		return labels, nil
 	}
 	defer in.Close()
 
@@ -1005,69 +1027,104 @@ var loadLabels = sync.OnceValue(func() map[string]string {
 	con, _ := NewContext(labels["file"])
 	con["level"] = fmt.Sprintf("s0:c%d,c%d", maxCategory-2, maxCategory-1)
 	privContainerMountLabel = con.get()
-	reserveLabel(privContainerMountLabel)
-	return labels
+	err = reserveLabel(privContainerMountLabel)
+	if err != nil {
+		return labels, err
+	}
+	return labels, nil
 })
 
-func label(key string) string {
-	return loadLabels()[key]
+func label(key string) (string, error) {
+	labels, err := loadLabels()
+	if err != nil {
+		return "", err
+	}
+	return labels[key], nil
 }
 
 // kvmContainerLabels returns the default processLabel and mountLabel to be used
 // for kvm containers by the calling process.
-func kvmContainerLabels() (string, string) {
-	processLabel := label("kvm_process")
-	if processLabel == "" {
-		processLabel = label("process")
+func kvmContainerLabels() (string, string, error) {
+	processLabel, err := label("kvm_process")
+	if err != nil {
+		return "", "", err
 	}
-
-	return addMcs(processLabel, label("file"))
+	if processLabel == "" {
+		processLabel, err = label("process")
+		if err != nil {
+			return "", "", err
+		}
+	}
+	label, err := label("file")
+	if err != nil {
+		return "", "", err
+	}
+	return addMcs(processLabel, label)
 }
 
 // initContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
-func initContainerLabels() (string, string) {
-	processLabel := label("init_process")
-	if processLabel == "" {
-		processLabel = label("process")
+func initContainerLabels() (string, string, error) {
+	processLabel, err := label("init_process")
+	if err != nil {
+		return "", "", err
 	}
-
-	return addMcs(processLabel, label("file"))
+	if processLabel == "" {
+		processLabel, err = label("process")
+		if err != nil {
+			return "", "", err
+		}
+	}
+	label, err := label("file")
+	if err != nil {
+		return "", "", err
+	}
+	return addMcs(processLabel, label)
 }
 
 // containerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
-func containerLabels() (processLabel string, fileLabel string) {
+func containerLabels() (processLabel string, fileLabel string, err error) {
 	if !getEnabled() {
-		return "", ""
+		return "", "", nil
 	}
 
-	processLabel = label("process")
-	fileLabel = label("file")
-	readOnlyFileLabel = label("ro_file")
-
+	processLabel, err = label("process")
+	if err != nil {
+		return "", "", err
+	}
+	fileLabel, err = label("file")
+	if err != nil {
+		return "", "", err
+	}
+	readOnlyFileLabel, err = label("ro_file")
+	if err != nil {
+		return "", "", err
+	}
 	if processLabel == "" || fileLabel == "" {
-		return "", fileLabel
+		return "", fileLabel, nil
 	}
 
 	if readOnlyFileLabel == "" {
 		readOnlyFileLabel = fileLabel
 	}
-
 	return addMcs(processLabel, fileLabel)
 }
 
-func addMcs(processLabel, fileLabel string) (string, string) {
+func addMcs(processLabel, fileLabel string) (string, string, error) {
 	scon, _ := NewContext(processLabel)
 	if scon["level"] != "" {
-		mcs := uniqMcs(CategoryRange)
+		mcs, err := uniqMcs(CategoryRange)
+		if err != nil {
+			return "", "", err
+		}
 		scon["level"] = mcs
 		processLabel = scon.Get()
 		scon, _ = NewContext(fileLabel)
 		scon["level"] = mcs
 		fileLabel = scon.Get()
 	}
-	return processLabel, fileLabel
+	return processLabel, fileLabel, nil
 }
 
 // securityCheckContext validates that the SELinux label is understood by the kernel
@@ -1096,7 +1153,9 @@ func copyLevel(src, dest string) (string, error) {
 		return "", err
 	}
 	mcsDelete(tcon["level"])
-	_ = mcsAdd(scon["level"])
+	if err = mcsAdd(scon["level"]); err != nil {
+		return "", err
+	}
 	tcon["level"] = scon["level"]
 	return tcon.Get(), nil
 }

@@ -2,21 +2,10 @@ package label
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/opencontainers/selinux/go-selinux"
 )
-
-// Valid Label Options
-var validOptions = map[string]bool{
-	"disable":  true,
-	"type":     true,
-	"filetype": true,
-	"user":     true,
-	"role":     true,
-	"level":    true,
-}
 
 var ErrIncompatibleLabel = errors.New("bad SELinux option: z and Z can not be used together")
 
@@ -27,55 +16,7 @@ var ErrIncompatibleLabel = errors.New("bad SELinux option: z and Z can not be us
 // If the disabled flag is passed in, the process label will not be set, but the mount label will be set
 // to the container_file label with the maximum category. This label is not usable by any confined label.
 func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
-	if !selinux.GetEnabled() {
-		return "", "", nil
-	}
-	processLabel, mountLabel := selinux.ContainerLabels()
-	if processLabel == "" {
-		// processLabel is required; if empty, do nothing.
-		return processLabel, mountLabel, nil
-	}
-	defer func() {
-		if retErr != nil {
-			selinux.ReleaseLabel(mountLabel)
-		}
-	}()
-	pcon, err := selinux.NewContext(processLabel)
-	if err != nil {
-		return "", "", err
-	}
-	mcsLevel := pcon["level"]
-	mcon, err := selinux.NewContext(mountLabel)
-	if err != nil {
-		return "", "", err
-	}
-	for _, opt := range options {
-		if opt == "disable" {
-			selinux.ReleaseLabel(mountLabel)
-			return "", selinux.PrivContainerMountLabel(), nil
-		}
-		k, v, ok := strings.Cut(opt, ":")
-		if !ok || !validOptions[k] {
-			return "", "", fmt.Errorf("bad label option %q, valid options 'disable' or \n'user, role, level, type, filetype' followed by ':' and a value", opt)
-		}
-		if k == "filetype" {
-			mcon["type"] = v
-			continue
-		}
-		pcon[k] = v
-		if k == "level" || k == "user" {
-			mcon[k] = v
-		}
-	}
-	if p := pcon.Get(); p != processLabel {
-		if pcon["level"] != mcsLevel {
-			selinux.ReleaseLabel(processLabel)
-		}
-		selinux.ReserveLabel(p)
-		processLabel = p
-	}
-	mountLabel = mcon.Get()
-	return processLabel, mountLabel, nil
+	return selinux.InitLabels(options)
 }
 
 // SetFileLabel modifies the "path" label to the specified file label
