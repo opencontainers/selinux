@@ -39,7 +39,7 @@ const (
 )
 
 type selinuxState struct {
-	mcsList    map[string]bool
+	mcsList    map[string]struct{}
 	enabledSet bool
 	enabled    bool
 	sync.Mutex
@@ -82,7 +82,7 @@ var (
 	readOnlyFileLabel string
 
 	state = selinuxState{
-		mcsList: make(map[string]bool),
+		mcsList: make(map[string]struct{}),
 	}
 )
 
@@ -813,7 +813,7 @@ func newContext(label string) (Context, error) {
 // clearLabels clears all reserved labels
 func clearLabels() {
 	state.Lock()
-	state.mcsList = make(map[string]bool)
+	state.mcsList = make(map[string]struct{})
 	state.Unlock()
 }
 
@@ -833,7 +833,7 @@ func checkLabel(label string) error {
 		if len(con) > 3 {
 			state.Lock()
 			defer state.Unlock()
-			if state.mcsList[con[3]] {
+			if _, exist := state.mcsList[con[3]]; exist {
 				return ErrMCSAlreadyExists
 			}
 		}
@@ -894,10 +894,10 @@ func mcsAdd(mcs string) error {
 	}
 	state.Lock()
 	defer state.Unlock()
-	if state.mcsList[mcs] {
+	if _, exist := state.mcsList[mcs]; exist {
 		return ErrMCSAlreadyExists
 	}
-	state.mcsList[mcs] = true
+	state.mcsList[mcs] = struct{}{}
 	return nil
 }
 
@@ -907,7 +907,7 @@ func mcsDelete(mcs string) {
 	}
 	state.Lock()
 	defer state.Unlock()
-	state.mcsList[mcs] = false
+	delete(state.mcsList, mcs)
 }
 
 func uniqMcs(catRange uint32) string {
