@@ -817,14 +817,16 @@ func clearLabels() {
 	state.Unlock()
 }
 
-// reserveLabel reserves the MLS/MCS level component of the specified label
-func reserveLabel(label string) {
+// reserveLabel reserves the MLS/MCS level component of the specified label.
+func reserveLabel(label string) error {
 	if len(label) != 0 {
 		con := strings.SplitN(label, ":", 4)
 		if len(con) > 3 {
-			_ = mcsAdd(con[3])
+			return mcsAdd(con[3])
 		}
 	}
+
+	return nil
 }
 
 func checkLabel(label string) error {
@@ -988,7 +990,7 @@ var loadLabels = sync.OnceValue(func() map[string]string {
 	con, _ := NewContext(labels["file"])
 	con["level"] = fmt.Sprintf("s0:c%d,c%d", maxCategory-2, maxCategory-1)
 	privContainerMountLabel = con.get()
-	reserveLabel(privContainerMountLabel)
+	_ = reserveLabel(privContainerMountLabel)
 	return labels
 })
 

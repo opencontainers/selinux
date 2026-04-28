@@ -223,9 +223,17 @@ func ClearLabels() {
 	clearLabels()
 }
 
-// ReserveLabel reserves the MLS/MCS level component of the specified label
+// ReserveLabel reserves the MLS/MCS level component of the specified label.
+//
+// Deprecated: use [ReserveLabelV2] instead.
 func ReserveLabel(label string) {
-	reserveLabel(label)
+	_ = reserveLabel(label)
+}
+
+// ReserveLabelV2 reserves the MLS/MCS level component of the specified label.
+// Returns an error if the label can't be reserved.
+func ReserveLabelV2(label string) error {
+	return reserveLabel(label)
 }
 
 // CheckLabel check the MLS/MCS level component of the specified label

@@ -71,7 +71,9 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 		if pcon["level"] != mcsLevel {
 			selinux.ReleaseLabel(processLabel)
 		}
-		selinux.ReserveLabel(p)
+		if err := selinux.ReserveLabelV2(p); err != nil {
+			return "", "", err
+		}
 		processLabel = p
 	}
 	mountLabel = mcon.Get()
