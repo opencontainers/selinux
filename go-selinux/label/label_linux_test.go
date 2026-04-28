@@ -53,6 +53,27 @@ func TestInit(t *testing.T) {
 	}
 }
 
+func TestSELinuxLabelExhaustion(t *testing.T) {
+	needSELinux(t)
+	selinux.CategoryRange = 5
+	var testNull []string
+	for i := 0; i < 20; i++ {
+		_, _, err := InitLabels(testNull)
+		wantErr := (i == 19)
+		if wantErr {
+			if err == nil {
+				t.Fatal("err should not be nil")
+			} else if errors.Is(err, selinux.ErrMCSExhausted) {
+				t.Fatalf("unexpected error %s", err.Error())
+			}
+		} else {
+			if err != nil {
+				t.Fatalf("unexpected error in loop %d: %v", i, err)
+			}
+		}
+	}
+}
+
 func TestRelabel(t *testing.T) {
 	needSELinux(t)
 
