@@ -1,4 +1,4 @@
-package selinux
+package impl
 
 import (
 	"bufio"
@@ -290,8 +290,8 @@ func openProcThreadSelf(subpath string, mode int) (*os.File, procfs.ProcThreadSe
 	return file, closer, nil
 }
 
-// Read the contents of /proc/thread-self/<fpath>.
-func readConThreadSelf(fpath string) (string, error) {
+// ReadConThreadSelf reads the contents of /proc/thread-self/<fpath>.
+func ReadConThreadSelf(fpath string) (string, error) {
 	in, closer, err := openProcThreadSelf(fpath, os.O_RDONLY|unix.O_CLOEXEC)
 	if err != nil {
 		return "", err
@@ -302,8 +302,8 @@ func readConThreadSelf(fpath string) (string, error) {
 	return readConFd(in)
 }
 
-// Write <val> to /proc/thread-self/<fpath>.
-func writeConThreadSelf(fpath, val string) error {
+// WriteConThreadSelf writes val to /proc/thread-self/<fpath>.
+func WriteConThreadSelf(fpath, val string) error {
 	if val == "" {
 		if !getEnabled() {
 			return nil
@@ -509,7 +509,7 @@ func lFileLabel(fpath string) (string, error) {
 }
 
 func setFSCreateLabel(label string) error {
-	return writeConThreadSelf("attr/fscreate", label)
+	return WriteConThreadSelf("attr/fscreate", label)
 }
 
 // pidLabel returns the SELinux label of the given pid, or an error.

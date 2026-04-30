@@ -1,12 +1,12 @@
 //go:build !linux
 
-package selinux
+package impl
 
-func readConThreadSelf(string) (string, error) {
+func ReadConThreadSelf(string) (string, error) {
 	return "", nil
 }
 
-func writeConThreadSelf(string, string) error {
+func WriteConThreadSelf(string, string) error {
 	return nil
 }
 

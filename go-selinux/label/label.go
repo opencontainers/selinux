@@ -3,12 +3,12 @@ package label
 import (
 	"fmt"
 
-	"github.com/opencontainers/selinux/go-selinux"
+	"github.com/opencontainers/selinux/internal/impl"
 )
 
 // Init initialises the labeling system
 func Init() {
-	_ = selinux.GetEnabled()
+	_ = impl.GetEnabled()
 }
 
 // FormatMountLabel returns a string to be used by the mount command. Using

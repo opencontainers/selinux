@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opencontainers/selinux/go-selinux"
+	"github.com/opencontainers/selinux/internal/impl"
 )
 
 // Valid Label Options
@@ -27,32 +27,32 @@ var ErrIncompatibleLabel = errors.New("bad SELinux option: z and Z can not be us
 // If the disabled flag is passed in, the process label will not be set, but the mount label will be set
 // to the container_file label with the maximum category. This label is not usable by any confined label.
 func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
-	if !selinux.GetEnabled() {
+	if !impl.GetEnabled() {
 		return "", "", nil
 	}
-	processLabel, mountLabel := selinux.ContainerLabels() //nolint:staticcheck // ContainerLabels will be moved to an internal package.
+	processLabel, mountLabel := impl.ContainerLabels()
 	if processLabel == "" {
 		// processLabel is required; if empty, do nothing.
 		return processLabel, mountLabel, nil
 	}
 	defer func() {
 		if retErr != nil {
-			selinux.ReleaseLabel(mountLabel)
+			impl.ReleaseLabel(mountLabel)
 		}
 	}()
-	pcon, err := selinux.NewContext(processLabel)
+	pcon, err := impl.NewContext(processLabel)
 	if err != nil {
 		return "", "", err
 	}
 	mcsLevel := pcon["level"]
-	mcon, err := selinux.NewContext(mountLabel)
+	mcon, err := impl.NewContext(mountLabel)
 	if err != nil {
 		return "", "", err
 	}
 	for _, opt := range options {
 		if opt == "disable" {
-			selinux.ReleaseLabel(mountLabel)
-			return "", selinux.PrivContainerMountLabel(), nil
+			impl.ReleaseLabel(mountLabel)
+			return "", impl.PrivContainerMountLabel(), nil
 		}
 		k, v, ok := strings.Cut(opt, ":")
 		if !ok || !validOptions[k] {
@@ -69,9 +69,9 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 	}
 	if p := pcon.Get(); p != processLabel {
 		if pcon["level"] != mcsLevel {
-			selinux.ReleaseLabel(processLabel)
+			impl.ReleaseLabel(processLabel)
 		}
-		if err := selinux.ReserveLabelV2(p); err != nil {
+		if err := impl.ReserveLabel(p); err != nil {
 			return "", "", err
 		}
 		processLabel = p
@@ -82,18 +82,18 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 
 // SetFileLabel modifies the "path" label to the specified file label
 func SetFileLabel(path string, fileLabel string) error {
-	if !selinux.GetEnabled() || fileLabel == "" {
+	if !impl.GetEnabled() || fileLabel == "" {
 		return nil
 	}
-	return selinux.SetFileLabel(path, fileLabel)
+	return impl.SetFileLabel(path, fileLabel)
 }
 
 // SetFileCreateLabel tells the kernel the label for all files to be created
 func SetFileCreateLabel(fileLabel string) error {
-	if !selinux.GetEnabled() {
+	if !impl.GetEnabled() {
 		return nil
 	}
-	return selinux.SetFSCreateLabel(fileLabel)
+	return impl.SetFSCreateLabel(fileLabel)
 }
 
 // Relabel changes the label of path and all the entries beneath the path.
@@ -102,12 +102,12 @@ func SetFileCreateLabel(fileLabel string) error {
 //
 // The path itself is guaranteed to be relabeled last.
 func Relabel(path string, fileLabel string, shared bool) error {
-	if !selinux.GetEnabled() || fileLabel == "" {
+	if !impl.GetEnabled() || fileLabel == "" {
 		return nil
 	}
 
 	if shared {
-		c, err := selinux.NewContext(fileLabel)
+		c, err := impl.NewContext(fileLabel)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ func Relabel(path string, fileLabel string, shared bool) error {
 		c["level"] = "s0"
 		fileLabel = c.Get()
 	}
-	return selinux.Chcon(path, fileLabel, true)
+	return impl.Chcon(path, fileLabel, true)
 }
 
 // Validate checks that the label does not include unexpected options

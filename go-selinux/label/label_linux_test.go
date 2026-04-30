@@ -5,12 +5,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/opencontainers/selinux/go-selinux"
+	"github.com/opencontainers/selinux/internal/impl"
 )
 
 func needSELinux(t *testing.T) {
 	t.Helper()
-	if !selinux.GetEnabled() {
+	if !impl.GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
 	}
 }
