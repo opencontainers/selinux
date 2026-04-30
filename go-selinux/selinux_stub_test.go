@@ -1,5 +1,4 @@
 //go:build !linux
-// +build !linux
 
 package selinux
 
@@ -111,9 +110,6 @@ func TestSELinuxStubs(t *testing.T) {
 	}
 	if v := EnforceMode(); v != Disabled {
 		t.Errorf("expected %d, got %d", Disabled, v)
-	}
-	if v := ROFileLabel(); v != "" {
-		t.Errorf(`expected "", got %q`, v)
 	}
 	if processLbl, fileLbl := ContainerLabels(); processLbl != "" || fileLbl != "" {
 		t.Errorf(`expected fileLbl="", fileLbl="" got processLbl=%q, fileLbl=%q`, processLbl, fileLbl)

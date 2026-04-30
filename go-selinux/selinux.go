@@ -40,7 +40,9 @@ var (
 	// is not the thread group leader.
 	ErrNotTGLeader = errors.New("calling thread is not the thread group leader")
 
-	// CategoryRange allows the upper bound on the category range to be adjusted
+	// CategoryRange allows the upper bound on the category range to be adjusted.
+	//
+	// Deprecated: use [SetCategoryRange] instead.
 	CategoryRange = DefaultCategoryRange
 
 	privContainerMountLabel string
@@ -57,6 +59,16 @@ func SetDisabled() {
 // GetEnabled returns whether SELinux is currently enabled.
 func GetEnabled() bool {
 	return getEnabled()
+}
+
+// SetCategoryRange allows to adjust the upper bound of the category range.
+// It affects subsequent calls to [KVMContainerLabel] and [InitContainerLabel].
+func SetCategoryRange(upper uint32) error {
+	if upper > DefaultCategoryRange {
+		return errors.New("can't have more than DefaultCategoryRange categories")
+	}
+	CategoryRange = upper
+	return nil
 }
 
 // ClassIndex returns the int index for an object class in the loaded policy,
@@ -211,9 +223,17 @@ func ClearLabels() {
 	clearLabels()
 }
 
-// ReserveLabel reserves the MLS/MCS level component of the specified label
+// ReserveLabel reserves the MLS/MCS level component of the specified label.
+//
+// Deprecated: use [ReserveLabelV2] instead.
 func ReserveLabel(label string) {
-	reserveLabel(label)
+	_ = reserveLabel(label)
+}
+
+// ReserveLabelV2 reserves the MLS/MCS level component of the specified label.
+// Returns an error if the label can't be reserved.
+func ReserveLabelV2(label string) error {
+	return reserveLabel(label)
 }
 
 // CheckLabel check the MLS/MCS level component of the specified label
@@ -250,25 +270,47 @@ func ReleaseLabel(label string) {
 	releaseLabel(label)
 }
 
-// ROFileLabel returns the specified SELinux readonly file label
+// ROFileLabel returns the specified SELinux readonly file label.
+//
+// Deprecated: this (apparently) has no users and will be removed from the
+// future version of this package. Open a bug report if you use it.
 func ROFileLabel() string {
 	return roFileLabel()
 }
 
 // KVMContainerLabels returns the default processLabel and mountLabel to be used
 // for kvm containers by the calling process.
+//
+// Deprecated: use [KVMContainerLabel] instead.
 func KVMContainerLabels() (string, string) {
 	return kvmContainerLabels()
 }
 
+// KVMContainerLabel returns the default process label to be used
+// for KVM containers by the calling process.
+func KVMContainerLabel() (string, error) {
+	return kvmContainerLabel()
+}
+
 // InitContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
+//
+// Deprecated: use [InitContainerLabel] instead.
 func InitContainerLabels() (string, string) {
 	return initContainerLabels()
 }
 
+// InitContainerLabel returns the default process label to be used
+// for containers running an init system like systemd by the calling process.
+func InitContainerLabel() (string, error) {
+	return initContainerLabel()
+}
+
 // ContainerLabels returns an allocated processLabel and fileLabel to be used for
 // container labeling by the calling process.
+//
+// Deprecated: this (apparently) has no users and will be removed from the
+// future version of this package. Open a bug report if you use it.
 func ContainerLabels() (processLabel string, fileLabel string) {
 	return containerLabels()
 }

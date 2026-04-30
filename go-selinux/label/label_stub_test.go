@@ -1,12 +1,9 @@
 //go:build !linux
-// +build !linux
 
 package label
 
 import (
 	"testing"
-
-	"github.com/opencontainers/selinux/go-selinux"
 )
 
 const testLabel = "system_u:object_r:container_file_t:s0:c1,c2"
@@ -19,9 +16,6 @@ func TestInit(t *testing.T) {
 		t.Fatal(err)
 	}
 	testDisabled := []string{"disable"}
-	if selinux.ROFileLabel() != "" {
-		t.Error("selinux.ROFileLabel Failed")
-	}
 	plabel, mlabel, err := InitLabels(testDisabled)
 	if err != nil {
 		t.Log("InitLabels Disabled Failed")

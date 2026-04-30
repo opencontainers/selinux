@@ -1,5 +1,4 @@
 //go:build !linux
-// +build !linux
 
 package selinux
 
@@ -80,7 +79,8 @@ func newContext(string) (Context, error) {
 func clearLabels() {
 }
 
-func reserveLabel(string) {
+func reserveLabel(string) error {
+	return nil
 }
 
 func checkLabel(string) error {
@@ -114,8 +114,16 @@ func kvmContainerLabels() (string, string) {
 	return "", ""
 }
 
+func kvmContainerLabel() (string, error) {
+	return "", nil
+}
+
 func initContainerLabels() (string, string) {
 	return "", ""
+}
+
+func initContainerLabel() (string, error) {
+	return "", nil
 }
 
 func containerLabels() (string, string) {

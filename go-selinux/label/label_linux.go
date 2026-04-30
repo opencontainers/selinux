@@ -30,7 +30,7 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 	if !selinux.GetEnabled() {
 		return "", "", nil
 	}
-	processLabel, mountLabel := selinux.ContainerLabels()
+	processLabel, mountLabel := selinux.ContainerLabels() //nolint:staticcheck // ContainerLabels will be moved to an internal package.
 	if processLabel == "" {
 		// processLabel is required; if empty, do nothing.
 		return processLabel, mountLabel, nil
@@ -71,7 +71,9 @@ func InitLabels(options []string) (plabel string, mlabel string, retErr error) {
 		if pcon["level"] != mcsLevel {
 			selinux.ReleaseLabel(processLabel)
 		}
-		selinux.ReserveLabel(p)
+		if err := selinux.ReserveLabelV2(p); err != nil {
+			return "", "", err
+		}
 		processLabel = p
 	}
 	mountLabel = mcon.Get()
