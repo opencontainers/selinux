@@ -127,3 +127,15 @@ func TestFileLabel(t *testing.T) {
 		t.Fatalf("InitLabels(filetype) failed: %v", err)
 	}
 }
+
+func TestInitLabelsTypeOverrideKeepsMCS(t *testing.T) {
+	needSELinux(t)
+
+	// Override only `type:` — level (MCS) must stay the same and
+	// must not trip ErrMCSAlreadyExists.
+	plabel, _, err := InitLabels([]string{"type:container_init_t"})
+	if err != nil {
+		t.Fatalf("InitLabels with type override failed: %v", err)
+	}
+	selinux.ReleaseLabel(plabel)
+}
