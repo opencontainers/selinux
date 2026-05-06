@@ -37,6 +37,7 @@ func TestInit(t *testing.T) {
 
 	testUser := []string{"user:user_u", "role:user_r", "type:user_t", "level:s0:c1,c15"}
 	plabel, mlabel, err = InitLabels(testUser)
+	selinux.ReleaseLabel(plabel)
 	if err != nil {
 		t.Fatalf("InitLabels(user) failed: %v", err)
 	}
@@ -118,6 +119,7 @@ func TestFileLabel(t *testing.T) {
 
 	testUser := []string{"filetype:test_file_t", "level:s0:c1,c15"}
 	_, mlabel, err := InitLabels(testUser)
+	selinux.ReleaseLabel(mlabel)
 	if err != nil {
 		t.Fatalf("InitLabels(user) failed: %v", err)
 	}
