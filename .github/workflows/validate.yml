@@ -136,20 +136,18 @@ jobs:
           fi
 
       - name: "make test"
-        continue-on-error: true
         run: lima make -C /tmp/selinux test
 
       - name: "32-bit test"
-        continue-on-error: true
         run: lima make -C /tmp/selinux GOARCH=386 test
 
       # https://github.com/opencontainers/selinux/issues/222
       # https://github.com/opencontainers/selinux/issues/225
       - name: "racy test"
-        continue-on-error: true
         run: lima bash -c 'cd /tmp/selinux && go test -timeout 10m -count 100000 ./go-selinux'
 
       - name: "Show AVC denials"
+        if: always()
         run: lima sudo ausearch -m AVC,USER_AVC || true
 
   all-done:
