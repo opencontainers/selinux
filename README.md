@@ -1,6 +1,8 @@
 # selinux
 
-[![GoDoc](https://godoc.org/github.com/opencontainers/selinux?status.svg)](https://godoc.org/github.com/opencontainers/selinux) [![Go Report Card](https://goreportcard.com/badge/github.com/opencontainers/selinux)](https://goreportcard.com/report/github.com/opencontainers/selinux) [![Build Status](https://travis-ci.org/opencontainers/selinux.svg?branch=master)](https://travis-ci.org/opencontainers/selinux)
+[![Go Reference](https://pkg.go.dev/badge/github.com/opencontainers/selinux.svg)](https://pkg.go.dev/github.com/opencontainers/selinux)
+[![Go Report Card](https://goreportcard.com/badge/github.com/opencontainers/selinux)](https://goreportcard.com/report/github.com/opencontainers/selinux)
+[![validate](https://github.com/opencontainers/selinux/actions/workflows/validate.yml/badge.svg)](https://github.com/opencontainers/selinux/actions/workflows/validate.yml)
 
 Common SELinux package used across the container ecosystem.
 
