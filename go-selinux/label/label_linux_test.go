@@ -37,6 +37,7 @@ func TestInit(t *testing.T) {
 
 	testUser := []string{"user:user_u", "role:user_r", "type:user_t", "level:s0:c1,c15"}
 	plabel, mlabel, err = InitLabels(testUser)
+	selinux.ReleaseLabel(plabel)
 	if err != nil {
 		t.Fatalf("InitLabels(user) failed: %v", err)
 	}
@@ -118,10 +119,23 @@ func TestFileLabel(t *testing.T) {
 
 	testUser := []string{"filetype:test_file_t", "level:s0:c1,c15"}
 	_, mlabel, err := InitLabels(testUser)
+	selinux.ReleaseLabel(mlabel)
 	if err != nil {
 		t.Fatalf("InitLabels(user) failed: %v", err)
 	}
 	if mlabel != "system_u:object_r:test_file_t:s0:c1,c15" {
 		t.Fatalf("InitLabels(filetype) failed: %v", err)
 	}
+}
+
+func TestInitLabelsTypeOverrideKeepsMCS(t *testing.T) {
+	needSELinux(t)
+
+	// Override only `type:` — level (MCS) must stay the same and
+	// must not trip ErrMCSAlreadyExists.
+	plabel, _, err := InitLabels([]string{"type:container_init_t"})
+	if err != nil {
+		t.Fatalf("InitLabels with type override failed: %v", err)
+	}
+	selinux.ReleaseLabel(plabel)
 }
