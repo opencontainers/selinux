@@ -92,7 +92,7 @@ jobs:
         run: make TESTFLAGS="${{ matrix.race }}" test
 
   vm:
-    name: "VM"
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
