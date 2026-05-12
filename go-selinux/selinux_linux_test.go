@@ -84,6 +84,69 @@ func TestSetFileLabel(t *testing.T) {
 	}
 }
 
+func TestChangeLabelType(t *testing.T) {
+	// These cases do not depend on SELinux being enabled.
+	t.Run("empty label", func(t *testing.T) {
+		out, err := ChangeLabelType("", TypeProcess)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if out != "" {
+			t.Errorf("got %q, want empty string", out)
+		}
+	})
+
+	t.Run("invalid LabelType", func(t *testing.T) {
+		if _, err := ChangeLabelType("system_u:system_r:container_t:s0", LabelType(0)); err == nil {
+			t.Error("expected error for LabelType(0), got nil")
+		}
+		if _, err := ChangeLabelType("system_u:system_r:container_t:s0", LabelType(42)); err == nil {
+			t.Error("expected error for LabelType(42), got nil")
+		}
+	})
+
+	if !GetEnabled() {
+		t.Skip("SELinux not enabled, skipping policy-dependent cases")
+	}
+
+	t.Run("invalid input label", func(t *testing.T) {
+		if _, err := ChangeLabelType("not-a-valid-label", TypeProcess); err == nil {
+			t.Error("expected error for malformed label, got nil")
+		}
+	})
+
+	t.Run("TypeKVMProcess", func(t *testing.T) {
+		// Pick a base label we can mutate. Use the process label from policy as a
+		// donor for user/role/level, but swap its type with something distinct so we
+		// can observe ChangeLabelType replacing it.
+		base := label("process")
+		if base == "" {
+			t.Skip("no process label in policy, skipping.")
+		}
+		baseCtx, err := NewContext(base)
+		if err != nil {
+			t.Fatalf("NewContext(%q): %v", base, err)
+		}
+		baseCtx["type"] = "foo_bar_baz_t"
+		if baseCtx["level"] == "" {
+			baseCtx["level"] = "s0"
+		}
+		input := baseCtx.Get()
+		res, err := ChangeLabelType(input, TypeKVMProcess)
+		t.Logf("ChangeLabelType(%q): %q", input, res)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if _, err := CanonicalizeContext(res); err != nil {
+			t.Error(err)
+		}
+		// Check the type has changed.
+		if strings.Contains(res, baseCtx["type"]) {
+			t.Errorf("want %q to not contain %q", res, baseCtx["type"])
+		}
+	})
+}
+
 func TestKVMContainerLabel(t *testing.T) {
 	if !GetEnabled() {
 		t.Skip("SELinux not enabled, skipping.")
