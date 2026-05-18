@@ -120,4 +120,7 @@ func TestSELinuxStubs(t *testing.T) {
 	if _, err = CopyLevel("foo", "bar"); err != nil {
 		t.Error(err)
 	}
+	if _, err = ChangeLabelType("", TypeProcess); err != nil {
+		t.Error(err)
+	}
 }
