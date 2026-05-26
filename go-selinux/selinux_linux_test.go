@@ -926,6 +926,15 @@ fake_r:fake_t:s0                 baz_r:baz_t:s0   sysadm_r:sysadm_t:s0
 	})
 }
 
+func TestReserveLabelNoMCS(t *testing.T) {
+	const label = "system_u:system_r:container_runtime_t:s0"
+
+	_ = ReserveLabelV2(label)
+	if err := ReserveLabelV2(label); err != nil {
+		t.Errorf("repeated ReserveLabelV2(%q): want nil, got %v", label, err)
+	}
+}
+
 func BenchmarkChcon(b *testing.B) {
 	file, err := filepath.Abs(os.Args[0])
 	if err != nil {
